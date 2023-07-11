@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "666292405593",
+    "project_id": "chat-app-be405",
+    "storage_bucket": "chat-app-be405.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:666292405593:android:0f7de245801d72b028b848",
+        "android_client_info": {
+          "package_name": "tien.nh.chatapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "666292405593-cdhf1s0q0tc0e26dntao0ckq5hblasbr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDup5Z17YbqAha-a7zOM76oTv5evLRO-C8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "666292405593-cdhf1s0q0tc0e26dntao0ckq5hblasbr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

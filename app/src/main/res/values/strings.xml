@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">ChatApp</string>
+    <string name="login_email_hint">Email</string>
+    <string name="register_slogan">Chat App.\nHelp us get\ncloser to \neach other! </string>
+    <string name="login_slogan">Already\nhave an\nAccount? </string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
+

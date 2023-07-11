@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/background_message"
+    android:layout_height="match_parent"
+    tools:context=".ChatActivity">
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="10dp"
+        android:paddingTop="10dp"
+        android:elevation="4dp"
+        app:titleMarginStart="20dp"
+        app:titleTextColor="#ffffff"
+        app:subtitleTextColor="#ffffff">
+        <ImageView
+            android:id="@+id/btn_back"
+            android:layout_width="35dp"
+            android:layout_marginRight="10dp"
+            android:layout_height="35dp"
+            android:src="@drawable/ic_back"/>
+        <ImageView
+            android:id="@+id/avatar_user"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:background="@drawable/rounded_image" />
+        <TextView
+            android:id="@+id/chat_name"
+            android:layout_width="wrap_content"
+            android:paddingLeft="10dp"
+            android:text="Nguyen Tien"
+            android:textSize="20sp"
+            android:textColor="#ffffff"
+            android:layout_height="wrap_content"/>
+        <ImageView
+            android:layout_width="35dp"
+            android:layout_gravity="end"
+            android:layout_marginRight="20dp"
+            android:layout_height="35dp"
+            android:src="@drawable/ic_info"/>
+    </androidx.appcompat.widget.Toolbar>
+<ScrollView
+    android:layout_below="@+id/toolbar"
+    android:layout_above="@+id/layout_bottom"
+    android:layout_width="match_parent"
+    android:background="@drawable/bg_corner_16"
+    android:layout_height="match_parent">
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/chatRecycleView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:clipToPadding="false"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:overScrollMode="never"
+        app:stackFromEnd="true"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        />
+
+</ScrollView>
+
+
+    <RelativeLayout
+        android:id="@+id/layout_bottom"
+        android:layout_alignParentBottom="true"
+        android:padding="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <ImageButton
+            android:layout_toStartOf="@+id/textMessage"
+            android:id="@+id/send_img"
+            android:layout_marginRight="5dp"
+            android:layout_width="70dp"
+            android:background="@android:drawable/ic_menu_gallery"
+            android:layout_height="60dp"/>
+        <EditText
+            android:id="@+id/textMessage"
+            android:textSize="18sp"
+            android:layout_toStartOf="@+id/imgSend"
+            android:layout_centerVertical="true"
+            android:background="@drawable/stroke_input"
+            android:hint="Vui lòng nhập nội dung..."
+            android:textColor="@color/colorPrimary"
+            android:layout_width="270dp"
+            android:layout_height="wrap_content"/>
+        <ImageButton
+            android:id="@+id/imgSend"
+            android:layout_gravity="bottom"
+            android:layout_width="50dp"
+            android:layout_centerVertical="true"
+            android:layout_alignParentEnd="true"
+            android:background="@android:drawable/ic_menu_send"
+            android:layout_height="50dp"/>
+    </RelativeLayout>
+</RelativeLayout>
