@@ -3,24 +3,23 @@ package tien.nh.chatapp;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-
 import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
-
 import android.view.ViewGroup;
 import android.widget.ListView;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.Cursor;
 
-
-
 import java.util.ArrayList;
-import java.util.List;
 import android.content.ContentValues;
 import android.widget.Toast;
-import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -168,7 +167,35 @@ public class Fragment1 extends Fragment implements FriendAdapter.OnAcceptFriendC
 
     }
 
+    private void acceptFriendshipRequestFireBase(int userId) {
+        FirebaseFirestore database = FirebaseFirestore.getInstance();
+        CollectionReference friendshipsRef = database.collection("friendships");
 
+        // Lấy thông tin người dùng đang đăng nhập
+        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        int currentUserId = sharedPreferences.getInt("currentUserId", 0);
+
+        Query query = friendshipsRef.whereEqualTo(ChatDatabaseHelper.COLUMN_FRIENDSHIP_USER1, userId)
+                .whereEqualTo(ChatDatabaseHelper.COLUMN_FRIENDSHIP_USER2, currentUserId);
+
+        query.get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    for (QueryDocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
+                        DocumentReference documentRef = documentSnapshot.getReference();
+                        documentRef.update(ChatDatabaseHelper.COLUMN_FRIENDSHIP_STATUS, "accepted")
+                                .addOnSuccessListener(aVoid -> {
+                                    // Cập nhật thành công
+                                })
+                                .addOnFailureListener(e -> {
+                                    // Xảy ra lỗi
+                                });
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // Xảy ra lỗi khi truy vấn dữ liệu
+                });
+
+    }
     public ArrayList<User> getFriendshipRequests(int currentUserId) {
         ArrayList<User> friendshipRequestList = new ArrayList<>();
 
@@ -242,6 +269,7 @@ public class Fragment1 extends Fragment implements FriendAdapter.OnAcceptFriendC
     @Override
     public void onAcceptFriendClick(int friendUserId) {
         acceptFriendshipRequest(friendUserId);
+        acceptFriendshipRequestFireBase(friendUserId);
     }
 
 //    private ArrayList<Friend> getListFriend() {

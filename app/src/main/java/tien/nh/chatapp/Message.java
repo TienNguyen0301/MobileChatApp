@@ -2,7 +2,6 @@ package tien.nh.chatapp;
 
 public class Message {
     private int id;
-
     private int friendship_id;
     private int sender_id;
     private int receiver_id;
@@ -11,17 +10,7 @@ public class Message {
     private String image;
     private String status;
 
-    private boolean isImageMessage;
-
-
-    public Message(int friendship_id, int sender_id, int receiver_id, String image, String status, String timestamp, boolean isImageMessage){
-        this.friendship_id = friendship_id;
-        this.sender_id = sender_id;
-        this.receiver_id = receiver_id;
-        this.image = image;
-        this.status = status;
-        this.timestamp = timestamp;
-        this.isImageMessage = isImageMessage;
+    public Message() {
     }
     public Message(int id,int friendship_id, int sender_id, int receiver_id, String message_text, String image, String status, String timestamp) {
         this.id = id;
@@ -32,9 +21,6 @@ public class Message {
         this.timestamp = timestamp;
         this.image = image;
         this.status = status;
-    }
-    public boolean isImageMessage() {
-        return isImageMessage;
     }
 
     public int getId() {

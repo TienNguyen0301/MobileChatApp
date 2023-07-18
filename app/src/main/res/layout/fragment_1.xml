@@ -14,23 +14,9 @@ tools:context=".HomeFragment">
     android:background="@color/white"
     tools:context=".HomeActivity">
 
-    <LinearLayout
-        android:id="@+id/edt_search"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:padding="10dp">
-        <EditText
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:textSize="25sp"
-            android:background="@drawable/stroke_input"
-            android:hint="Danh sách lời mời kết bạn"/>
-    </LinearLayout>
     <ListView
         android:id="@+id/listFriendShip"
-        android:layout_below="@+id/edt_search"
+
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 

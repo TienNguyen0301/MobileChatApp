@@ -4,15 +4,20 @@ import android.content.Context;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -60,6 +65,7 @@ public class FriendAdapter extends GenericAdapter<User, FriendAdapter.ViewHolder
         viewHolder.dateAt = convertView.findViewById(R.id.dateAt);
         viewHolder.avatarTextView = convertView.findViewById(R.id.avatarTextView);
         viewHolder.btnAccept = convertView.findViewById(R.id.btn_acceptFriend);
+        viewHolder.status_User = convertView.findViewById(R.id.statusUser);
 
         return viewHolder;
     }
@@ -67,7 +73,7 @@ public class FriendAdapter extends GenericAdapter<User, FriendAdapter.ViewHolder
     @Override
     protected void bindData(ViewHolder viewHolder, User data) {
         viewHolder.userFriend.setText(data.getEmail());
-        viewHolder.dateAt.setText(data.getPhone());
+//        viewHolder.dateAt.setText(data.getPhone());
 
         String avatarPath = data.getAvatar();
         ImageView avatarImageView = viewHolder.avatarTextView;
@@ -76,6 +82,26 @@ public class FriendAdapter extends GenericAdapter<User, FriendAdapter.ViewHolder
                 .error(android.R.drawable.stat_notify_error) // Ảnh hiển thị khi xảy ra lỗi trong quá trình tải hình ảnh
                 .apply(RequestOptions.circleCropTransform())
                 .into(avatarImageView);
+
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+        DocumentReference userRef = firestore.collection(ChatDatabaseHelper.TABLE_USERS).document(String.valueOf(data.getId()));
+        userRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
+            @Override
+            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException error) {
+                if (error != null) {
+                    // Xử lý lỗi khi nhận sự kiện thay đổi dữ liệu
+                    return;
+                }
+
+                if (snapshot != null && snapshot.exists()) {
+                    // Lấy giá trị của trường "status"
+                    String status = snapshot.getString("status");
+                    // Cập nhật lại trạng thái trong friendList hoặc làm bất kỳ xử lý nào khác cần thiết
+                    viewHolder.status_User.setText(status);
+                }
+            }
+        });
+
 
         if(getLayoutRes() == R.layout.item_friend){
             viewHolder.btnAccept.setOnClickListener(new View.OnClickListener() {
@@ -93,15 +119,12 @@ public class FriendAdapter extends GenericAdapter<User, FriendAdapter.ViewHolder
 
     protected static class ViewHolder extends GenericAdapter.ViewHolder {
         TextView userFriend;
-        TextView dateAt;
+        TextView dateAt, status_User;
 
         ImageView avatarTextView;
 
         Button btnAccept;
 
-
-
-        // Các view khác trong item layout
     }
 
     public interface OnAcceptFriendClickListener {

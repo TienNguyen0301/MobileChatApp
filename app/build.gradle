@@ -77,6 +77,9 @@ dependencies {
     implementation 'com.google.firebase:firebase-firestore:23.0.0'
     implementation 'androidx.annotation:annotation:1.2.0'
     implementation 'com.google.firebase:firebase-messaging:23.0.0'  // Replace with the latest version
+    implementation 'com.google.firebase:firebase-messaging-ktx:23.1.2'
+    implementation 'com.google.firebase:firebase-firestore-ktx:24.6.1'
+    implementation 'com.google.firebase:firebase-storage:20.0.0'
 
     // thư viện xử lí hình ảnh
     implementation 'com.github.bumptech.glide:glide:4.12.0'
@@ -93,5 +96,5 @@ dependencies {
     implementation 'androidx.cursoradapter:cursoradapter:1.0.0'
 
     implementation 'com.squareup.picasso:picasso:2.71828'
-    
+
 }

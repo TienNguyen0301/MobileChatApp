@@ -1,5 +1,6 @@
 package tien.nh.chatapp;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
@@ -8,10 +9,15 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ListView;
-import android.widget.Toast;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 
@@ -93,21 +99,29 @@ public class AdminLowerActivity extends AppCompatActivity implements AdminAdapte
         int userId = user.getId();
 
 
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.delete("users", "_id = ?", new String[]{String.valueOf(userId)});
-        db.close();
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+        CollectionReference usersRef = firestore.collection(ChatDatabaseHelper.TABLE_USERS);
 
+        // Xác định document reference cho người dùng cần xóa
+        DocumentReference userDocRef = usersRef.document(String.valueOf(userId));
 
-        // Lấy thông tin người dùng đang đăng nhập
-        SharedPreferences sharedPreferences = this.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-        int currentUserId = sharedPreferences.getInt("currentUserId", 0);
-
-        // Refresh the user list in the adapter
-        ArrayList<User> usersList = getOtherUsers(currentUserId);
-        adminAdapter.setData(usersList);
-        adminAdapter.notifyDataSetChanged();
-
-        // Handle the navigation or show a toast message here
-        Toast.makeText(this, "User deleted successfully", Toast.LENGTH_SHORT).show();
+        // Xóa người dùng từ Firestore
+        userDocRef.delete()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        // Xóa thành công, thực hiện các thao tác khác
+                        // Ví dụ: cập nhật lại giao diện, thông báo thành công, vv.
+                        Intent intent = new Intent(getApplication(), AdminActivity.class);
+                        startActivity(intent);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        // Xử lý lỗi khi xóa người dùng
+                        Log.d("ERROR", "Lỗi khi xóa người dùng từ Firestore");
+                    }
+                });
     }
 }

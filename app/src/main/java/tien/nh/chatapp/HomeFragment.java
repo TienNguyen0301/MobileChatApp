@@ -9,23 +9,22 @@ import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-//import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.ListView;
-
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.Cursor;
-
 import android.content.ContentValues;
 import android.widget.Toast;
 import java.util.Date;
 import java.text.SimpleDateFormat;
-import android.widget.SimpleCursorAdapter;
 
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QuerySnapshot;
 
 
 /**
@@ -83,9 +82,6 @@ public class HomeFragment extends Fragment implements UserAdapter.OnAddFriendCli
 
         // Ánh xạ ListView từ layout
         ListView listViewUsers = rootView.findViewById(R.id.listViewUsers);
-        EditText editTextSearch = rootView.findViewById(R.id.editTextSearch);
-        Button buttonSearch = rootView.findViewById(R.id.buttonSearch);
-
 
         // Lấy thông tin người dùng đang đăng nhập
         SharedPreferences sharedPreferences = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
@@ -98,92 +94,9 @@ public class HomeFragment extends Fragment implements UserAdapter.OnAddFriendCli
         listViewUsers.setAdapter(userAdapter);
         userAdapter.setOnAddFriendClickListener(this::onAddFriendClick);
 
-        // xử lí khi người dùng nhấn nút search
-        buttonSearch.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String searchQuery = editTextSearch.getText().toString();
-                performSearch(searchQuery);
-                ArrayList<User> userListSearch =  performSearch(searchQuery);
-                UserAdapter userAdapter = new UserAdapter(requireContext(), userListSearch);
-                listViewUsers.setAdapter(userAdapter);
-                userAdapter.setOnAddFriendClickListener(this::onAddFriendClick);
-            }
-
-            private void onAddFriendClick(int i) {
-                addFriend(i);
-            }
-        });
-
-
         return rootView;
     }
 
-    private ArrayList<User> performSearch(String searchQuery) {
-        ChatDatabaseHelper databaseHelper = new ChatDatabaseHelper(requireContext());
-        SQLiteDatabase db = databaseHelper.getReadableDatabase();
-
-        // Thực hiện truy vấn tìm kiếm
-        String query = "SELECT * FROM users WHERE email LIKE '%" + searchQuery + "%'";
-        Cursor cursor = db.rawQuery(query, null);
-
-        ArrayList<User> userListSearch = new ArrayList<>();
-        // Trích xuất dữ liệu từ Cursor và tạo danh sách người dùng
-        if (cursor != null && cursor.moveToFirst()) {
-            do {
-                // Lấy thông tin từ Cursor
-                int userId = cursor.getInt(cursor.getColumnIndexOrThrow("_id"));
-                String username = cursor.getString(cursor.getColumnIndexOrThrow("name"));
-                String avatar = cursor.getString(cursor.getColumnIndexOrThrow("avatar"));
-                String phone = cursor.getString(cursor.getColumnIndexOrThrow("phone"));
-                String email = cursor.getString(cursor.getColumnIndexOrThrow("email"));
-                int role = cursor.getInt(cursor.getColumnIndexOrThrow("role"));
-
-
-                // Tạo đối tượng User từ thông tin lấy được
-                User user = new User(userId, username, phone, email, avatar, role);
-                // Thêm user vào danh sách
-                userListSearch.add(user);
-            } while (cursor.moveToNext());
-        }
-
-        cursor.close();
-        db.close();
-
-        return userListSearch;
-    }
-
-
-    private List<User> getAllUsers() {
-         //Tạo một danh sách người dùng
-        List<User> userList = new ArrayList<>();
-
-
-        ChatDatabaseHelper databaseHelper = new ChatDatabaseHelper(requireContext());
-        SQLiteDatabase db = databaseHelper.getReadableDatabase();
-        String query = "SELECT * FROM users";
-        Cursor cursor = db.rawQuery(query, null);
-
-        // Duyệt qua từng hàng trong Cursor
-        while (cursor.moveToNext()) {
-            int userId = cursor.getInt(cursor.getColumnIndexOrThrow("_id"));
-            String username = cursor.getString(cursor.getColumnIndexOrThrow("name"));
-            String avatar = cursor.getString(cursor.getColumnIndexOrThrow("avatar"));
-            String phone = cursor.getString(cursor.getColumnIndexOrThrow("phone"));
-            String email = cursor.getString(cursor.getColumnIndexOrThrow("email"));
-            int role = cursor.getInt(cursor.getColumnIndexOrThrow("role"));
-
-            // Get other user information
-
-            User user = new User(userId, username, phone,email, avatar, role );
-            userList.add(user);
-        }
-
-        // Đóng Cursor sau khi sử dụng
-        cursor.close();
-
-        return userList;
-    }
 
     private ArrayList<User> getOtherUsers(int currentUserId) {
         ArrayList<User> userOtherList = new ArrayList<>();
@@ -216,7 +129,6 @@ public class HomeFragment extends Fragment implements UserAdapter.OnAddFriendCli
         return userOtherList;
     }
 
-    // Phương thức để thêm bạn
     private void addFriend(int friendUserId) {
         // Thực hiện các bước để thêm mối quan hệ kết bạn vào cơ sở dữ liệu hoặc bộ sưu tập
         // Ví dụ: sử dụng cơ sở dữ liệu SQLite
@@ -242,6 +154,7 @@ public class HomeFragment extends Fragment implements UserAdapter.OnAddFriendCli
 
         values.put("friendship_created_date", formattedTime);
 
+        addDataToFireBase(currentUserId, friendUserId, "waiting", formattedTime);
         long insertedId = db.insert("friendships", null, values);
 
         // Trước khi thêm lời mời kết bạn, kiểm tra sự tồn tại của lời mời đã gửi từ user1 đến user2
@@ -272,7 +185,71 @@ public class HomeFragment extends Fragment implements UserAdapter.OnAddFriendCli
         // Đóng kết nối cơ sở dữ liệu sau khi sử dụng
         db.close();
 
+    }
 
+    private void addDataToFireBase( int user1, int user2, String friendship_status, String created_date){
+        FirebaseFirestore database = FirebaseFirestore.getInstance();
+        CollectionReference usersRef = database.collection(ChatDatabaseHelper.TABLE_FRIENDSHIPS);
+
+        // Kiểm tra xem bộ sưu tập "friendships" có bất kỳ tài liệu nào hay không
+        usersRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                QuerySnapshot querySnapshot = task.getResult();
+                if (querySnapshot.isEmpty()) {
+                    // Bộ sưu tập "users" chưa có tài liệu nào, tạo một tài liệu mới với ID là 1
+                    createNewFriendShip(usersRef.document("1"),user1,user2, friendship_status,created_date);
+                } else {
+                    // Bộ sưu tập "users" đã có tài liệu, sử dụng transaction để tăng giá trị ID lên 1 và tạo tài liệu mới
+                    createFriendShipWithIncrementedId(usersRef, user1,user2, friendship_status,created_date);
+                }
+            } else {
+                // Lỗi khi truy vấn bộ sưu tập "users"
+                Toast.makeText(getContext(), "Failed to query users collection", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+    }
+
+    private void createNewFriendShip(DocumentReference userRef, int user1, int user2, String friendship_status, String created_date) {
+        HashMap<String, Object> userData = new HashMap<>();
+        userData.put("user1", user1);
+        userData.put("user2", user2);
+        userData.put("friendship_status", friendship_status);
+        userData.put("created_date", created_date);
+
+        // Tạo tài liệu mới với ID là 1
+        userRef.set(userData).addOnSuccessListener(aVoid -> {
+            // Đăng ký người dùng thành công
+            Toast.makeText(getContext(), "Successed", Toast.LENGTH_SHORT).show();
+        }).addOnFailureListener(e -> {
+            // Lỗi khi đăng ký người dùng
+            Toast.makeText(getContext() , "Failed", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void createFriendShipWithIncrementedId(CollectionReference usersRef, int user1, int user2, String friendship_status, String created_date) {
+        usersRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                QuerySnapshot querySnapshot = task.getResult();
+                List<DocumentSnapshot> documents = querySnapshot.getDocuments();
+
+                if (documents.isEmpty()) {
+                    // Bộ sưu tập "users" chưa có tài liệu nào, tạo tài liệu mới với ID là 1
+                    createNewFriendShip(usersRef.document("1"), user1,user2, friendship_status,created_date);
+                } else {
+                    // Lấy tài liệu cuối cùng trong danh sách và tăng giá trị ID lên 1
+                    DocumentSnapshot lastDocument = documents.get(documents.size() - 1);
+                    String lastUserId = lastDocument.getId();
+                    long newId = Long.parseLong(lastUserId) + 1;
+
+                    // Tạo tài liệu mới với ID mới
+                    createNewFriendShip(usersRef.document(String.valueOf(newId)),  user1,user2, friendship_status,created_date);
+                }
+            } else {
+                // Lỗi khi truy vấn bộ sưu tập "users"
+                Toast.makeText(getContext(), "Failed to query users collection", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     public boolean isFriendshipRequestSent(int user1Id, int user2Id) {
@@ -295,3 +272,4 @@ public class HomeFragment extends Fragment implements UserAdapter.OnAddFriendCli
         addFriend(friendUserId);
     }
 }
+

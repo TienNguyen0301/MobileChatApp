@@ -1,19 +1,13 @@
 package tien.nh.chatapp;
 
-import android.content.Intent;
-import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
-
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
-
 import java.util.List;
-
 import tien.nh.chatapp.databinding.ItemMessageReceivedBinding;
 import tien.nh.chatapp.databinding.ItemMessageReceivedImageBinding;
 import tien.nh.chatapp.databinding.ItemMessageSentBinding;
@@ -37,19 +31,15 @@ public  class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         this.user = user;
     }
 
+    public void updateData(List<Message> newMessages) {
+        messageList = newMessages;
+        notifyDataSetChanged(); // Thông báo cập nhật giao diện
+    }
+
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-//        if(viewType == VIEW_TYPE_SENT) {
-//            return new SendMessageViewHolder(ItemMessageSentBinding.inflate(LayoutInflater.from(parent.getContext()), parent,false));
-//        } else if (viewType == VIEW_TYPE_SENT_IMAGE) {
-//            return new SendImageMessageViewHolder(ItemMessageSentImageBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
-//        }else {
-//            return new ReceivedMessageViewHolder(ItemMessageReceivedBinding.inflate(LayoutInflater.from(parent.getContext()), parent,false));
-//        }
-
-
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
 
         if (viewType == VIEW_TYPE_SENT) {
@@ -59,10 +49,10 @@ public  class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             ItemMessageSentImageBinding sentImageBinding = ItemMessageSentImageBinding.inflate(inflater, parent, false);
             return new SendImageMessageViewHolder(sentImageBinding);
         }
-//        else if (viewType == VIEW_TYPE_RECEIVED_IMAGE){
-//            ItemMessageReceivedImageBinding receivedImageBinding = ItemMessageReceivedImageBinding.inflate(inflater, parent, false);
-//            return new ReceivedImageMessageViewHolder(receivedImageBinding);
-//        }
+        else if (viewType == VIEW_TYPE_RECEIVED_IMAGE){
+            ItemMessageReceivedImageBinding receivedImageBinding = ItemMessageReceivedImageBinding.inflate(inflater, parent, false);
+            return new ReceivedImageMessageViewHolder(receivedImageBinding, user);
+        }
         else {
             ItemMessageReceivedBinding receivedBinding = ItemMessageReceivedBinding.inflate(inflater, parent, false);
             return new ReceivedMessageViewHolder(receivedBinding, user);
@@ -76,9 +66,9 @@ public  class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         }else if (getItemViewType(position) == VIEW_TYPE_SENT_IMAGE) {
             ((SendImageMessageViewHolder) holder).setData(messageList.get(position));
         }
-//        else if (getItemViewType(position) == VIEW_TYPE_RECEIVED_IMAGE){
-//            ((ReceivedImageMessageViewHolder) holder).setData(messageList.get(position));
-//        }
+        else if (getItemViewType(position) == VIEW_TYPE_RECEIVED_IMAGE){
+            ((ReceivedImageMessageViewHolder) holder).setData(messageList.get(position));
+        }
         else {
             ((ReceivedMessageViewHolder) holder).setData(messageList.get(position));
 
@@ -101,11 +91,11 @@ public  class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 return VIEW_TYPE_SENT;
             }
         } else {
-//            if (messageList.get(position).getImage() == null) {
+            if (messageList.get(position).getImage() == null) {
                 return VIEW_TYPE_RECEIVED;
-//            } else {
-//                return VIEW_TYPE_RECEIVED_IMAGE;
-//            }
+            } else {
+                return VIEW_TYPE_RECEIVED_IMAGE;
+            }
         }
     }
 
@@ -163,16 +153,17 @@ public  class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                     .load(message.getImage())
                     .apply(new RequestOptions().placeholder(R.drawable.ic_facebook)) // Placeholder image while loading
                     .into(binding.imageMessage);
-//            binding.textDateTime.setText(message.getImage().toString());
+            binding.textDateTime.setText(message.getImage().toString());
         }
     }
 
     static class ReceivedImageMessageViewHolder extends RecyclerView.ViewHolder{
         private final ItemMessageReceivedImageBinding binding;
-
-        ReceivedImageMessageViewHolder(ItemMessageReceivedImageBinding itemMessageReceivedImageBinding) {
+        private User user;
+        ReceivedImageMessageViewHolder(ItemMessageReceivedImageBinding itemMessageReceivedImageBinding,  User user) {
             super(itemMessageReceivedImageBinding.getRoot());
             binding = itemMessageReceivedImageBinding;
+            this.user = user;
         }
 
         void setData(Message message) {
@@ -180,9 +171,14 @@ public  class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             // Ví dụ: hiển thị ảnh trong ImageView
             Glide.with(binding.imageMessage.getContext())
                     .load(message.getImage())
-                    .apply(new RequestOptions().placeholder(R.drawable.ic_facebook)) // Placeholder image while loading
+                    .apply(new RequestOptions().placeholder(R.drawable.ic_error)) // Placeholder image while loading
                     .into(binding.imageMessage);
-            binding.textDateTime.setText(message.getImage().toString());
+            Glide.with(binding.imgProfile.getContext())
+                    .load(user.getAvatar())
+                    .error(android.R.drawable.stat_notify_error)
+                    .apply(RequestOptions.circleCropTransform())
+                    .into(binding.imgProfile);
+//            binding.textDateTime.setText(message.getImage().toString());
         }
     }
 
@@ -192,6 +188,8 @@ public  class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             notifyItemInserted(messageList.size() - 1);
         }
     }
+
+
 
 //    public void addReceivedImageMessage(Message message) {
 //        if (message.getImage() != null) {

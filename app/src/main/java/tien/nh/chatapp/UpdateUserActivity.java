@@ -1,5 +1,6 @@
 package tien.nh.chatapp;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.ContentValues;
@@ -7,16 +8,16 @@ import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class UpdateUserActivity extends AppCompatActivity {
 
@@ -105,20 +106,47 @@ public class UpdateUserActivity extends AppCompatActivity {
                         values.put("avatar", newAvatarPath);
                     }
                     // Update the user record in the database
-                    db.update("users", values, "_id = ?", new String[]{String.valueOf(id)});
-                    db.close();
+//                    db.update("users", values, "_id = ?", new String[]{String.valueOf(id)});
+//                    db.close();
 
-                    // Create an intent to pass back the updated user information
-                    Intent intent = new Intent(getApplication(), AdminActivity.class);
-//                    intent.putExtra("userId", id);
-                    intent.putExtra("userName", updatedUserName);
-                    intent.putExtra("userEmail", updatedUserEmail);
-                    intent.putExtra("avatar", newAvatarPath);
-                    intent.putExtra("phone", updatedPhone);
-                    intent.putExtra("role", role);
+                    // Cập nhật thông tin người dùng trên Firebase Firestore
+                    FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+                    DocumentReference userRef = firestore.collection(ChatDatabaseHelper.TABLE_USERS).document(String.valueOf(id));
+                    userRef.update("name", updatedUserName,
+                                    "email", updatedUserEmail,
+                                    "phone", updatedPhone,
+                                    "avatar", newAvatarPath,
+                                    "role", roleU)
+                            .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                @Override
+                                public void onSuccess(Void aVoid) {
+                                    // Cập nhật thành công trên Firebase Firestore
+                                    // Tiếp tục xử lý hoặc hiển thị thông báo thành công
+                                    // Create an intent to pass back the updated user information
+                                    Intent intent = new Intent(getApplication(), AdminActivity.class);
+////                    intent.putExtra("userId", id);
+//                                    intent.putExtra("userName", updatedUserName);
+//                                    intent.putExtra("userEmail", updatedUserEmail);
+//                                    intent.putExtra("avatar", newAvatarPath);
+//                                    intent.putExtra("phone", updatedPhone);
+//                                    intent.putExtra("role", role);
 
-                    // Set the result code and intent to return to the previous activity
-                    startActivityForResult(intent, UPDATE_USER_REQUEST_CODE);
+
+
+                                    // Set the result code and intent to return to the previous activity
+//                    startActivityForResult(intent, UPDATE_USER_REQUEST_CODE);
+                                    startActivity(intent);
+                                }
+                            })
+                            .addOnFailureListener(new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+                                    // Xử lý lỗi khi cập nhật trên Firebase Firestore
+                                    // Hiển thị thông báo lỗi hoặc thực hiện các thao tác khác
+                                }
+                            });
+
+
 
                     // Reset the flag after processing the changes
                     isTextChanged = false;
@@ -160,5 +188,6 @@ public class UpdateUserActivity extends AppCompatActivity {
             newAvatarPath = imageUri.toString();
         }
     }
+
 
 }

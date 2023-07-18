@@ -17,11 +17,6 @@ tools:context=".UpdateUserActivity">
             android:textSize="20sp"
             android:textStyle="bold"
             android:padding="16dp" />
-<!--        <Button-->
-<!--            android:id="@+id/btnAddUser"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:text="Thêm"-->
-<!--            android:layout_height="wrap_content"/>-->
     </LinearLayout>
     <LinearLayout
         android:layout_marginTop="20dp"
@@ -82,20 +77,7 @@ tools:context=".UpdateUserActivity">
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-            <TextView
-                android:layout_width="130dp"
-                android:layout_height="wrap_content"
-                android:text="Password:"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:padding="16dp" />
-            <EditText
-                android:id="@+id/password"
-                android:background="@drawable/stroke_input"
-                android:layout_width="250dp"
-                android:layout_height="wrap_content"/>
-        </LinearLayout>
+            android:layout_height="wrap_content"/>
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
@@ -140,14 +122,14 @@ tools:context=".UpdateUserActivity">
         android:layout_height="wrap_content">
         <Button
             android:id="@+id/btnUpdateUser"
-            android:layout_width="120dp"
-            android:text="Cập nhật"
+            android:layout_width="130dp"
+            android:text="Update"
             android:layout_height="wrap_content"/>
         <Button
             android:id="@+id/btnHuy"
             android:layout_marginLeft="20dp"
-            android:layout_width="120dp"
-            android:text="Hủy"
+            android:layout_width="130dp"
+            android:text="Cancel"
             android:layout_height="wrap_content"/>
     </LinearLayout>
 </LinearLayout>

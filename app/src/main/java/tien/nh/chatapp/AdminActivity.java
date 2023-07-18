@@ -1,26 +1,23 @@
 package tien.nh.chatapp;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.database.sqlite.SQLiteDatabase;
-import android.widget.Toast;
-
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.RequestOptions;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 
@@ -42,10 +39,11 @@ public class AdminActivity extends AppCompatActivity implements AdminAdapter.OnU
         btnLogout = (ImageButton) findViewById(R.id.btnLogout);
         addUserButton = (Button) findViewById(R.id.addUserButton);
 
+
         dbHelper = new ChatDatabaseHelper(this); // Move the initialization here
-        // Lấy thông tin người dùng đang đăng nhập
-        SharedPreferences sharedPreferences = this.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
         int currentUserId = sharedPreferences.getInt("currentUserId", 0);
+
 
         ArrayList<User> usersList = getOtherUsers(currentUserId);
 
@@ -77,6 +75,7 @@ public class AdminActivity extends AppCompatActivity implements AdminAdapter.OnU
                 startActivity(intent);
             }
         });
+
 
     }
 
@@ -168,22 +167,86 @@ public class AdminActivity extends AppCompatActivity implements AdminAdapter.OnU
         // Handle the delete operation here
         int userId = user.getId();
 
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        db.delete("users", "_id = ?", new String[]{String.valueOf(userId)});
-        db.close();
 
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+        CollectionReference usersRef = firestore.collection(ChatDatabaseHelper.TABLE_USERS);
 
-        // Lấy thông tin người dùng đang đăng nhập
-        SharedPreferences sharedPreferences = this.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-        int currentUserId = sharedPreferences.getInt("currentUserId", 0);
+        // Xác định document reference cho người dùng cần xóa
+        DocumentReference userDocRef = usersRef.document(String.valueOf(userId));
 
-        // Refresh the user list in the adapter
-        ArrayList<User> usersList = getOtherUsers(currentUserId);
-        adminAdapter.setData(usersList);
-        adminAdapter.notifyDataSetChanged();
-
-        // Handle the navigation or show a toast message here
-        Toast.makeText(this, "User deleted successfully", Toast.LENGTH_SHORT).show();
-
+        // Xóa người dùng từ Firestore
+        userDocRef.delete()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        // Xóa thành công, thực hiện các thao tác khác
+                        // Ví dụ: cập nhật lại giao diện, thông báo thành công, vv.
+                        Intent intent = new Intent(getApplication(), AdminActivity.class);
+                        startActivity(intent);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        // Xử lý lỗi khi xóa người dùng
+                        Log.d("ERROR", "Lỗi khi xóa người dùng từ Firestore");
+                    }
+                });
     }
+
+//    private void fetchDataFromFirestore() {
+//        FirebaseFirestore firestoreUsers = FirebaseFirestore.getInstance();
+//        firestoreUsers.collection(ChatDatabaseHelper.TABLE_USERS).get()
+//                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+//                    @Override
+//                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+//                        // Xóa dữ liệu cũ trong SQLite để cập nhật lại từ dữ liệu Firebase
+//                        dbHelper.deleteAllUsers();
+//
+//                        // Duyệt qua danh sách các DocumentSnapshot
+//                        for (DocumentSnapshot documentSnapshot : queryDocumentSnapshots) {
+//                            // Lấy dữ liệu từ DocumentSnapshot
+//                            int documentId = Integer.parseInt(documentSnapshot.getId());
+//                            String nameFb = documentSnapshot.getString(ChatDatabaseHelper.COLUMN_USER_NAME);
+//                            String emailFb = documentSnapshot.getString(ChatDatabaseHelper.COLUMN_USER_EMAIL);
+//                            String phoneFb = documentSnapshot.getString(ChatDatabaseHelper.COLUMN_USER_PHONE);
+//                            String passwordFb = documentSnapshot.getString(ChatDatabaseHelper.COLUMN_USER_PASSWORD);
+//                            String avatarFb = documentSnapshot.getString(ChatDatabaseHelper.COLUMN_USER_AVATAR);
+//                            Long role = documentSnapshot.getLong(ChatDatabaseHelper.COLUMN_USER_ROLE);
+//                            int roleFB = role != null ? role.intValue() : 0;
+//
+//                            // Thực hiện các thao tác cập nhật cơ sở dữ liệu SQLite tại đây
+//                            // Ví dụ: thêm mới hoặc cập nhật bản ghi trong SQLite
+//
+//                            SQLiteDatabase db = dbHelper.getWritableDatabase();
+//
+//                            // Insert user data into the "users" table
+//                            ContentValues values = new ContentValues();
+//                            values.put("_id", documentId);
+//                            values.put("name", nameFb);
+//                            values.put("email", emailFb);
+//                            values.put("phone", phoneFb);
+//                            values.put("password", passwordFb);
+//                            values.put("avatar", avatarFb);
+//                            values.put("role", roleFB);
+//
+//                            // Thêm mới người dùng vào cơ sở dữ liệu SQLite
+//                            dbHelper.insertUser(documentId, nameFb, emailFb, phoneFb, passwordFb, avatarFb, roleFB);
+//
+//                        }
+//
+//                        // Sau khi hoàn thành việc cập nhật cơ sở dữ liệu SQLite
+//                        // có thể cập nhật giao diện hoặc thực hiện các thao tác khác
+//                    }
+//                })
+//                .addOnFailureListener(new OnFailureListener() {
+//                    @Override
+//                    public void onFailure(@NonNull Exception e) {
+//                        // Xử lý lỗi khi lấy dữ liệu từ Firebase
+//                        Log.d("ERROR", "Lỗi khi lấy dữ liệu từ Firebase");
+//                    }
+//                });
+//
+//
+//    }
 }

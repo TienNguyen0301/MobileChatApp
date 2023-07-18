@@ -1,27 +1,32 @@
 package tien.nh.chatapp;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Context;
 import android.os.Bundle;
-
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.content.Intent;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import android.widget.FrameLayout;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
-
 
 import android.content.SharedPreferences;
 import android.widget.PopupMenu;
@@ -30,10 +35,9 @@ import android.widget.PopupMenu;
 
 public class HomeActivity extends AppCompatActivity implements BottomNavigationView.OnNavigationItemSelectedListener{
 
-    ChatDatabaseHelper dbHelper = new ChatDatabaseHelper(this); // Replace 'this' with your activity or fragment context
-
     ImageView m_avatar_user;
 
+    TextView status_user;
     ImageButton overflowButton;
     private BottomNavigationView bottomNavigationView;
     private FrameLayout fragmentContainer;
@@ -44,6 +48,8 @@ public class HomeActivity extends AppCompatActivity implements BottomNavigationV
         setContentView(R.layout.activity_home);
         
         m_avatar_user = (ImageView) findViewById(R.id.avatar_user);
+        status_user = (TextView) findViewById(R.id.status_user);
+
         // Nhận thông tin user từ Intent
         Intent intent = getIntent();
         String name = intent.getStringExtra("name");
@@ -53,8 +59,31 @@ public class HomeActivity extends AppCompatActivity implements BottomNavigationV
         SharedPreferences sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
         int currentUserId = sharedPreferences.getInt("currentUserId", 0);
 
-        // ... và các thông tin khác
 
+
+        // Check status user
+        // Cập nhật thông tin người dùng trên Firebase Firestore
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+        DocumentReference userRef = firestore.collection(ChatDatabaseHelper.TABLE_USERS).document(String.valueOf(currentUserId));
+        userRef.update("status", "online");
+
+        // Đăng ký lắng nghe sự thay đổi dữ liệu trên Firebase Firestore
+        CollectionReference usersRef = firestore.collection(ChatDatabaseHelper.TABLE_USERS);
+        usersRef.addSnapshotListener(new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
+                if (error != null) {
+                    // Xử lý lỗi khi nhận sự kiện thay đổi dữ liệu
+                    return;
+                }
+
+                // Kiểm tra nếu có sự thay đổi dữ liệu
+                if (value != null && !value.isEmpty()) {
+                    status_user.setText("Online");
+
+                }
+            }
+        });
 
         // Hiển thị hình ảnh avatar
         Glide.with(this)
@@ -87,6 +116,12 @@ public class HomeActivity extends AppCompatActivity implements BottomNavigationV
                             editor.clear(); // Xóa tất cả dữ liệu trong SharedPreferences
                             editor.apply(); // Áp dụng thay đổi
 
+                            // Check status user
+                            // Cập nhật thông tin người dùng trên Firebase Firestore
+                            FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+                            DocumentReference userRef = firestore.collection(ChatDatabaseHelper.TABLE_USERS).document(String.valueOf(currentUserId));
+                            userRef.update("status", "offline");
+
                             //chuyển sang màn hình đăng nhập
                             Intent intent = new Intent(getApplicationContext(), MainActivity.class);
                             startActivity(intent);
@@ -113,6 +148,27 @@ public class HomeActivity extends AppCompatActivity implements BottomNavigationV
     }
 
 
+    @Override
+    public void onPause() {
+        super.onPause();
+        SharedPreferences sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        int currentUserId = sharedPreferences.getInt("currentUserId", 0);
+        // Cập nhật thông tin người dùng trên Firebase Firestore
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+        DocumentReference userRef = firestore.collection(ChatDatabaseHelper.TABLE_USERS).document(String.valueOf(currentUserId));
+        userRef.update("status", "offline");
+    }
+
+    @Override
+    public void onDestroy() {
+        // Cập nhật thông tin người dùng trên Firebase Firestore
+        super.onDestroy();
+        SharedPreferences sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        int currentUserId = sharedPreferences.getInt("currentUserId", 0);
+        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+        DocumentReference userRef = firestore.collection(ChatDatabaseHelper.TABLE_USERS).document(String.valueOf(currentUserId));
+        userRef.update("status", "offline");
+    }
 
     // Hiển thị fragment trong container
     private void showFragment(Fragment fragment) {
@@ -138,10 +194,10 @@ public class HomeActivity extends AppCompatActivity implements BottomNavigationV
             showFragment(new HomeFragment());
             return true;
         }
-        if (item.getItemId() == R.id.action_search){
-            showFragment(new ListFriendFragment());
-            return true;
-        }
+//        if (item.getItemId() == R.id.action_search){
+//            showFragment(new ListFriendFragment());
+//            return true;
+//        }
         if (item.getItemId() == R.id.action_profile){
             showFragment(new Fragment1());
             return true;

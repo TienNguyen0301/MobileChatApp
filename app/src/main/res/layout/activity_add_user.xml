@@ -14,7 +14,7 @@
             android:gravity="center"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="THÊM MỚI USER"
+            android:text="Add New User"
             android:textSize="20sp"
             android:textStyle="bold"
             android:padding="16dp" />
@@ -137,14 +137,14 @@
         <Button
             android:id="@+id/btnThem"
             android:layout_marginLeft="20dp"
-            android:layout_width="120dp"
-            android:text="Thêm"
+            android:layout_width="130dp"
+            android:text="Add User"
             android:layout_height="wrap_content"/>
         <Button
             android:id="@+id/btnHuy"
             android:layout_marginLeft="20dp"
-            android:layout_width="120dp"
-            android:text="Hủy"
+            android:layout_width="130dp"
+            android:text="Cancel"
             android:layout_height="wrap_content"/>
     </LinearLayout>
 </LinearLayout>

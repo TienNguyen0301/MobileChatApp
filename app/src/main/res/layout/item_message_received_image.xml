@@ -6,16 +6,27 @@
     android:layout_height="wrap_content"
     android:padding="4dp">
 
+    <ImageView
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="@id/imageMessage"
+        android:id="@+id/imgProfile"
+        android:layout_width="25dp"
+        android:layout_height="25dp"
+        android:scaleType="centerCrop"
+        android:background="@drawable/rounded_image" />
 
     <!-- Hiển thị ảnh -->
     <ImageView
         android:id="@+id/imageMessage"
         android:layout_width="100dp"
         android:layout_height="100dp"
-        android:padding="12dp"
-        android:background="@color/colorAccent"
-        app:layout_constraintEnd_toStartOf="@id/imageMessage"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_marginStart="4dp"
+        android:layout_marginLeft="4dp"
+        android:paddingLeft="12dp"
+        android:paddingRight="12dp"
+        app:layout_constraintStart_toEndOf="@id/imgProfile"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_percent="0.75"/>
     <TextView
         android:id="@+id/textDateTime"
         android:layout_width="0dp"

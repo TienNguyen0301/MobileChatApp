@@ -1,12 +1,8 @@
 package tien.nh.chatapp;
 
-import android.widget.BaseAdapter;
 import java.util.ArrayList;
-import java.util.List;
 import android.content.Context;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.LayoutInflater;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -60,7 +56,6 @@ public class UserAdapter extends GenericAdapter<User, UserAdapter.ViewHolder> {
         viewHolder.btnAddFriend.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                int userId = (int) v.getId();
                 int id = (int) data.getId();
                 if (onAddFriendClickListener != null) {
                     onAddFriendClickListener.onAddFriendClick(id);

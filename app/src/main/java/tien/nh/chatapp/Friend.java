@@ -20,19 +20,19 @@ public class Friend {
         return id;
     }
 
-    public int getUser1() {
-        return user1;
-    }
-
-    public int getUser2() {
-        return user2;
-    }
-    public String getFriendship_status() {
-        return friendship_status;
-    }
-
-
-    public String getFriendship_created_date() {
-        return friendship_created_date;
-    }
+//    public int getUser1() {
+//        return user1;
+//    }
+//
+//    public int getUser2() {
+//        return user2;
+//    }
+//    public String getFriendship_status() {
+//        return friendship_status;
+//    }
+//
+//
+//    public String getFriendship_created_date() {
+//        return friendship_created_date;
+//    }
 }

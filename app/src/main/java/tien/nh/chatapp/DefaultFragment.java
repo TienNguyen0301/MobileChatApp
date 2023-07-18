@@ -8,15 +8,15 @@ import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
 
-import android.util.Log;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListView;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 import android.widget.AdapterView;
 import android.content.Intent;
@@ -70,6 +70,7 @@ public class DefaultFragment extends Fragment  {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
+
     }
 
 
@@ -83,6 +84,8 @@ public class DefaultFragment extends Fragment  {
 
         // Ánh xạ ListView từ layout
         ListView listFriends = rootView.findViewById(R.id.listFriend);
+        Button buttonSearch = rootView.findViewById(R.id.buttonSearch);
+        EditText editTextSearch = rootView.findViewById(R.id.editTextSearch);
 
         // Lấy thông tin người dùng đang đăng nhập
         SharedPreferences sharedPreferences = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
@@ -105,6 +108,7 @@ public class DefaultFragment extends Fragment  {
 
                 // Chuyển sang Activity mới và truyền dữ liệu của item
                 Intent intent = new Intent(getActivity(), ChatActivity.class);
+
                 intent.putExtra("_id", selectedUser.getId()); // Truyền ID của user được chọn
                 intent.putExtra("name", selectedUser.getUsername()); // Truyền tên của user được chọn
                 intent.putExtra("email", selectedUser.getEmail());
@@ -113,8 +117,67 @@ public class DefaultFragment extends Fragment  {
             }
         });
 
+        // xử lí khi người dùng nhấn nút search
+        buttonSearch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String searchQuery = editTextSearch.getText().toString();
+                performSearch(searchQuery);
+                ArrayList<User> userListSearch =  performSearch(searchQuery);
+                FriendAdapter friendList = new FriendAdapter(getActivity(), userListSearch);
+                listFriends.setAdapter(friendList);
+            }
+
+        });
+
+
+
 
         return rootView;
+    }
+
+    private ArrayList<User> performSearch(String searchQuery) {
+        ChatDatabaseHelper databaseHelper = new ChatDatabaseHelper(requireContext());
+        SQLiteDatabase db = databaseHelper.getReadableDatabase();
+
+        // Lấy thông tin người dùng đang đăng nhập
+        SharedPreferences sharedPreferences = requireContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        int currentUserId = sharedPreferences.getInt("currentUserId", 0);
+
+        ArrayList<User> userListSearch = new ArrayList<>();
+
+        // Thực hiện truy vấn tìm kiếm
+        if (TextUtils.isEmpty(searchQuery)) {
+            userListSearch = getFriendList(currentUserId);
+        } else {
+            String query = "SELECT * FROM users WHERE email LIKE '%" + searchQuery + "%'";
+            Cursor cursor = db.rawQuery(query, null);
+
+
+            // Trích xuất dữ liệu từ Cursor và tạo danh sách người dùng
+            if (cursor != null && cursor.moveToFirst()) {
+                do {
+                    // Lấy thông tin từ Cursor
+                    int userId = cursor.getInt(cursor.getColumnIndexOrThrow("_id"));
+                    String username = cursor.getString(cursor.getColumnIndexOrThrow("name"));
+                    String avatar = cursor.getString(cursor.getColumnIndexOrThrow("avatar"));
+                    String phone = cursor.getString(cursor.getColumnIndexOrThrow("phone"));
+                    String email = cursor.getString(cursor.getColumnIndexOrThrow("email"));
+                    int role = cursor.getInt(cursor.getColumnIndexOrThrow("role"));
+
+
+                    // Tạo đối tượng User từ thông tin lấy được
+                    User user = new User(userId, username, phone, email, avatar, role);
+                    // Thêm user vào danh sách
+                    userListSearch.add(user);
+                } while (cursor.moveToNext());
+            }
+
+            cursor.close();
+        }
+        db.close();
+
+        return userListSearch;
     }
 
     public ArrayList<User> getFriendList(int currentUserId) {
@@ -125,7 +188,7 @@ public class DefaultFragment extends Fragment  {
 
         String query = "SELECT users.* FROM users " +
                 "INNER JOIN friendships ON (users._id = friendships.user1 OR users._id = friendships.user2) " +
-                "WHERE (friendships.user1 = ? OR friendships.user2 = ?) AND friendships.friendship_status = 'accept' " +
+                "WHERE (friendships.user1 = ? OR friendships.user2 = ?) AND friendships.friendship_status = 'accepted' " +
                 "AND users._id != ?";
         String[] selectionArgs = {String.valueOf(currentUserId), String.valueOf(currentUserId), String.valueOf(currentUserId)};
         Cursor cursor = db.rawQuery(query, selectionArgs);

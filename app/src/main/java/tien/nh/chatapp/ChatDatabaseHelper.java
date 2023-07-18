@@ -1,6 +1,6 @@
 package tien.nh.chatapp;
+import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
@@ -10,38 +10,38 @@ public class ChatDatabaseHelper extends SQLiteOpenHelper {
 
 
     // Table names
-    private static final String TABLE_USERS = "users";
+    public static final String TABLE_USERS = "users";
     public static final String TABLE_MESSAGES = "messages";
-    private static final String TABLE_FRIENDSHIPS = "friendships";
+    public static final String TABLE_FRIENDSHIPS = "friendships";
 
 
 
 
     // Users table column
     public static final String COLUMN_ID = "_id";
-    private static final String COLUMN_USER_NAME = "name";
-    private static final String COLUMN_USER_PASSWORD = "password";
-    private static final String COLUMN_USER_PHONE = "phone";
-    private static final String COLUMN_USER_EMAIL = "email";
-    private static final String COLUMN_USER_AVATAR = "avatar";
-    private static final String COLUMN_USER_ROLE = "role";
+    public static final String COLUMN_USER_NAME = "name";
+    public static final String COLUMN_USER_PASSWORD = "password";
+    public static final String COLUMN_USER_PHONE = "phone";
+    public static final String COLUMN_USER_EMAIL = "email";
+    public static final String COLUMN_USER_AVATAR = "avatar";
+    public static final String COLUMN_USER_ROLE = "role";
 
     // Friendships table column names
-    private static final String COLUMN_FRIENDSHIP_USER1 = "user1";
-    private static final String COLUMN_FRIENDSHIP_USER2 = "user2";
-    private static final String COLUMN_FRIENDSHIP_STATUS = "friendship_status";
-    private static final String COLUMN_FRIENDSHIP_ID = "friendship_id";
+    public static final String COLUMN_FRIENDSHIP_USER1 = "user1";
+    public static final String COLUMN_FRIENDSHIP_USER2 = "user2";
+    public static final String COLUMN_FRIENDSHIP_STATUS = "friendship_status";
+    public static final String COLUMN_FRIENDSHIP_ID = "friendship_id";
 
-    private static final String COLUMN_FRIENDSHIP_CREATED_DATE = "friendship_created_date";
+    public static final String COLUMN_FRIENDSHIP_CREATED_DATE = "friendship_created_date";
 
 
     // Messages table column names
-    private static final String COLUMN_SENDER_ID = "sender_id";
-    private static final String COLUMN_RECEIVER_ID = "receiver_id";
-    private static final String COLUMN_MESSAGE_TEXT = "message_text";
-    private static final String COLUMN_TIMESTAMP = "timestamp";
-    private static final String COLUMN_MESSAGE_IMAGE = "image";
-    private static final String COLUMN_MESSAGE_STATUS = "status";
+    public static final String COLUMN_SENDER_ID = "sender_id";
+    public static final String COLUMN_RECEIVER_ID = "receiver_id";
+    public static final String COLUMN_MESSAGE_TEXT = "message_text";
+    public static final String COLUMN_TIMESTAMP = "timestamp";
+    public static final String COLUMN_MESSAGE_IMAGE = "image";
+    public static final String COLUMN_MESSAGE_STATUS = "status";
 
     // Create users table query
     private static final String CREATE_TABLE_USERS = "CREATE TABLE " + TABLE_USERS + "("
@@ -54,7 +54,7 @@ public class ChatDatabaseHelper extends SQLiteOpenHelper {
             + COLUMN_USER_ROLE + " TEXT DEFAULT '0'"
             + ")";
 
-    // Create conversations table query
+    // Create friendships table query
     private static final String CREATE_TABLE_FRIENDSHIPS = "CREATE TABLE " + TABLE_FRIENDSHIPS + "("
             + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
             + COLUMN_FRIENDSHIP_USER1 + " INTEGER,"
@@ -111,27 +111,71 @@ public class ChatDatabaseHelper extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    public FriendshipInfo getFriendshipInfo(int userId1, int userId2) {
-        FriendshipInfo friendshipInfo = null;
-
-        SQLiteDatabase db = getReadableDatabase();
-
-        // Thực hiện truy vấn để kiểm tra mối quan hệ bạn bè giữa hai người dùng
-        String query = "SELECT * FROM friendships " +
-                "WHERE (user1 = ? AND user2 = ?) OR (user1 = ? AND user2 = ?) AND friendship_status = 'accept'";
-
-        String[] selectionArgs = {String.valueOf(userId1), String.valueOf(userId2), String.valueOf(userId2), String.valueOf(userId1)};
-        Cursor cursor = db.rawQuery(query, selectionArgs);
-
-        if (cursor.moveToFirst()) {
-            int user1Id = cursor.getInt(cursor.getColumnIndexOrThrow("user1"));
-            int user2Id = cursor.getInt(cursor.getColumnIndexOrThrow("user2"));
-            friendshipInfo = new FriendshipInfo(user1Id, user2Id);
-        }
-
-        cursor.close();
+    public void deleteAllUsers() {
+        SQLiteDatabase db = getWritableDatabase();
+        db.delete(TABLE_USERS, null, null);
         db.close();
-
-        return friendshipInfo;
     }
+
+    public void deleteAllFriendShips() {
+        SQLiteDatabase db = getWritableDatabase();
+        db.delete(TABLE_FRIENDSHIPS, null, null);
+        db.close();
+    }
+
+    public void deleteAllMessages() {
+        SQLiteDatabase db = getWritableDatabase();
+        db.delete(TABLE_MESSAGES, null, null);
+        db.close();
+    }
+
+    public void insertUser(int id, String name, String email, String phone, String password, String avatar, int role) {
+        SQLiteDatabase db = getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_ID, id);
+        values.put(COLUMN_USER_NAME, name);
+        values.put(COLUMN_USER_EMAIL, email);
+        values.put(COLUMN_USER_PHONE, phone);
+        values.put(COLUMN_USER_PASSWORD, password);
+        values.put(COLUMN_USER_AVATAR, avatar);
+        values.put(COLUMN_USER_ROLE, role);
+
+        db.insert(TABLE_USERS, null, values);
+        db.close();
+    }
+
+    public void insertFriendship(int id, int user1, int user2, String friendship_status, String friendship_created_date) {
+        SQLiteDatabase db = getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_ID, id);
+        values.put(COLUMN_FRIENDSHIP_USER1, user1);
+        values.put(COLUMN_FRIENDSHIP_USER2, user2);
+        values.put(COLUMN_FRIENDSHIP_STATUS, friendship_status);
+        values.put(COLUMN_FRIENDSHIP_CREATED_DATE, friendship_created_date);
+
+        db.insert(TABLE_FRIENDSHIPS, null, values);
+        db.close();
+    }
+
+    public void insertMessage(int id, int friendship_id, int sender_id, int receiver_id, String message_text, String status, String timestamp) {
+        SQLiteDatabase db = getWritableDatabase();
+
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_ID, id);
+        values.put(COLUMN_FRIENDSHIP_ID, friendship_id);
+        values.put(COLUMN_SENDER_ID, sender_id);
+        values.put(COLUMN_RECEIVER_ID, receiver_id);
+        values.put(COLUMN_MESSAGE_TEXT, message_text);
+        values.put(COLUMN_MESSAGE_STATUS, status);
+        values.put(COLUMN_TIMESTAMP, timestamp);
+
+        db.insert(TABLE_MESSAGES, null, values);
+        db.close();
+    }
+
+
+
+
 }
