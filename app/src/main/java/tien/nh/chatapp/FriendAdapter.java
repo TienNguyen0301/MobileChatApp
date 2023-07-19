@@ -62,7 +62,6 @@ public class FriendAdapter extends GenericAdapter<User, FriendAdapter.ViewHolder
 
         ViewHolder viewHolder = new ViewHolder();
         viewHolder.userFriend = convertView.findViewById(R.id.userFriend);
-        viewHolder.dateAt = convertView.findViewById(R.id.dateAt);
         viewHolder.avatarTextView = convertView.findViewById(R.id.avatarTextView);
         viewHolder.btnAccept = convertView.findViewById(R.id.btn_acceptFriend);
         viewHolder.status_User = convertView.findViewById(R.id.statusUser);
@@ -72,35 +71,36 @@ public class FriendAdapter extends GenericAdapter<User, FriendAdapter.ViewHolder
 
     @Override
     protected void bindData(ViewHolder viewHolder, User data) {
-        viewHolder.userFriend.setText(data.getEmail());
-//        viewHolder.dateAt.setText(data.getPhone());
+            viewHolder.userFriend.setText(data.getEmail());
 
-        String avatarPath = data.getAvatar();
-        ImageView avatarImageView = viewHolder.avatarTextView;
-        Glide.with(context)
-                .load(avatarPath)
-                .error(android.R.drawable.stat_notify_error) // Ảnh hiển thị khi xảy ra lỗi trong quá trình tải hình ảnh
-                .apply(RequestOptions.circleCropTransform())
-                .into(avatarImageView);
+            String avatarPath = data.getAvatar();
+            ImageView avatarImageView = viewHolder.avatarTextView;
+            Glide.with(context)
+                    .load(avatarPath)
+                    .error(android.R.drawable.stat_notify_error) // Ảnh hiển thị khi xảy ra lỗi trong quá trình tải hình ảnh
+                    .apply(RequestOptions.circleCropTransform())
+                    .into(avatarImageView);
 
-        FirebaseFirestore firestore = FirebaseFirestore.getInstance();
-        DocumentReference userRef = firestore.collection(ChatDatabaseHelper.TABLE_USERS).document(String.valueOf(data.getId()));
-        userRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
-            @Override
-            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException error) {
-                if (error != null) {
-                    // Xử lý lỗi khi nhận sự kiện thay đổi dữ liệu
-                    return;
-                }
+            if(getLayoutRes() == R.layout.friend) {
+                FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+                DocumentReference userRef = firestore.collection(ChatDatabaseHelper.TABLE_USERS).document(String.valueOf(data.getId()));
+                userRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
+                    @Override
+                    public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException error) {
+                        if (error != null) {
+                            // Xử lý lỗi khi nhận sự kiện thay đổi dữ liệu
+                            return;
+                        }
 
-                if (snapshot != null && snapshot.exists()) {
-                    // Lấy giá trị của trường "status"
-                    String status = snapshot.getString("status");
-                    // Cập nhật lại trạng thái trong friendList hoặc làm bất kỳ xử lý nào khác cần thiết
-                    viewHolder.status_User.setText(status);
-                }
+                        if (snapshot != null && snapshot.exists()) {
+                            // Lấy giá trị của trường "status"
+                            String status = snapshot.getString("status");
+                            // Cập nhật lại trạng thái trong friendList hoặc làm bất kỳ xử lý nào khác cần thiết
+                            viewHolder.status_User.setText(status);
+                        }
+                    }
+                });
             }
-        });
 
 
         if(getLayoutRes() == R.layout.item_friend){

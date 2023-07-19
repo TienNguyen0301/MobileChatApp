@@ -122,6 +122,24 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
         return pattern.matcher(email).matches();
     }
 
+    public boolean isValidPhoneNumber(String phoneNumber) {
+        // Remove non-numeric characters from the phone number
+        String numericPhoneNumber = phoneNumber.replaceAll("[^0-9]", "");
+
+        // Check if the resulting string contains only digits
+        if (!numericPhoneNumber.matches("[0-9]+")) {
+            return false;
+        }
+
+        // Optionally, you can set rules for the minimum and maximum length of the phone number
+        int minPhoneNumberLength = 10; // For example, a valid phone number must have at least 10 digits
+        int maxPhoneNumberLength = 15; // For example, a valid phone number must not exceed 15 digits
+
+        int phoneNumberLength = numericPhoneNumber.length();
+        return phoneNumberLength >= minPhoneNumberLength && phoneNumberLength <= maxPhoneNumberLength;
+    }
+
+
     private void registerUser(String name, String phone, String password, String email, String avatar, String status, int role) {
         FirebaseFirestore database = FirebaseFirestore.getInstance();
         CollectionReference usersRef = database.collection(ChatDatabaseHelper.TABLE_USERS);
@@ -200,8 +218,25 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
             String phone = userPhone.getText().toString();
             String password = userPassword.getText().toString();
 
-            boolean isValid = isValidEmail(email);
-            if(isValid) {
+            // Check if all required fields are filled
+            if (name.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty() ) {
+                Toast.makeText(getApplicationContext(), "Please fill in all required fields", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Validate the phone number format
+            boolean isValidPhoneNumber = isValidPhoneNumber(phone);
+            if (!isValidPhoneNumber) {
+                Toast.makeText(getApplicationContext(), "Invalid phone number format", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Validate the email format
+            boolean isValidEmail = isValidEmail(email);
+            if (!isValidEmail) {
+                Toast.makeText(getApplicationContext(), "Invalid email format", Toast.LENGTH_SHORT).show();
+                return;
+            }else  {
                 SQLiteDatabase db = dbHelper.getWritableDatabase();
 
                 // Insert user data into the "users" table
@@ -252,11 +287,12 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
 
                 // Start the main activity
                 startActivity(new Intent(this, MainActivity.class));
-            } else {
-                userEmail.requestFocus();
-                Toast.makeText(getApplicationContext(), "Email không hợp lệ", Toast.LENGTH_SHORT).show();
-
             }
+//            else {
+//                userEmail.requestFocus();
+//                Toast.makeText(getApplicationContext(), "Email không hợp lệ", Toast.LENGTH_SHORT).show();
+//
+//            }
 
         }
 

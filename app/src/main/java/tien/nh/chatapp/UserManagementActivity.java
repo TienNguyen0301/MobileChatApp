@@ -1,6 +1,7 @@
 package tien.nh.chatapp;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
@@ -11,56 +12,85 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ListView;
+
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 
-public class AdminLowerActivity extends AppCompatActivity implements AdminAdapter.OnUserDeleteListener{
+public class UserManagementActivity extends AppCompatActivity implements AdminAdapter.OnUserDeleteListener{
+    Button addUserButton;
+    ImageButton btn_back;
     ChatDatabaseHelper dbHelper = new ChatDatabaseHelper(this);
     ListView listViewAdmin;
-    AdminAdapter adminAdapter; // Declare the adminAdapter as a class-level field
-    ImageButton btnLogout;
-
+    AdminAdapter adminAdapter;
+    private static final int UPDATE_USER_REQUEST_CODE = 1;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_admin_lower);
+        setContentView(R.layout.activity_user_management);
 
         listViewAdmin = (ListView) findViewById(R.id.userListView) ;
-        btnLogout = (ImageButton) findViewById(R.id.btnLogout);
+        addUserButton = (Button) findViewById(R.id.addUserButton);
+        btn_back = (ImageButton) findViewById(R.id.btn_back);
 
         dbHelper = new ChatDatabaseHelper(this); // Move the initialization here
-        // Lấy thông tin người dùng đang đăng nhập
-        SharedPreferences sharedPreferences = this.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
         int currentUserId = sharedPreferences.getInt("currentUserId", 0);
 
         ArrayList<User> usersList = getOtherUsers(currentUserId);
 
-        adminAdapter = new AdminAdapter(this, usersList, AdminLowerActivity.class);
+        adminAdapter = new AdminAdapter(this, usersList, UserManagementActivity.class);
         listViewAdmin.setAdapter(adminAdapter);
 
-        adminAdapter.setOnUserDeleteListener(this); // Set the listener
+//        adminAdapter.setOnUserDeleteListener(this); // Set the listener
+        adminAdapter.setOnUserDeleteListener(this::onDeleteUser);
 
-        btnLogout.setOnClickListener(new View.OnClickListener() {
+
+        addUserButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.clear(); // Xóa tất cả dữ liệu trong SharedPreferences
-                editor.apply(); // Áp dụng thay đổi
 
-                //chuyển sang màn hình đăng nhập
-                Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+                Intent intent = new Intent(getApplicationContext(), AddUserActivity.class);
                 startActivity(intent);
-                finish(); // Đóng màn hình hiện tại (nếu cần thiết)
             }
         });
+
+        btn_back.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), AdminActivity.class);
+                startActivity(intent);
+            }
+        });
+
+    }
+
+
+    // Trong AdminActivity
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == UPDATE_USER_REQUEST_CODE && resultCode == RESULT_OK) {
+            // Xử lý khi UpdateUserActivity đã hoàn thành cập nhật thành công
+            // Ví dụ: làm mới danh sách người dùng
+            SharedPreferences sharedPreferences = this.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+            int currentUserId = sharedPreferences.getInt("currentUserId", 0);
+            ArrayList<User> usersList = getOtherUsers(currentUserId);
+
+            adminAdapter = new AdminAdapter(this, usersList, UserManagementActivity.class);
+            listViewAdmin.setAdapter(adminAdapter);
+        }
     }
 
     private ArrayList<User> getOtherUsers(int currentUserId) {
@@ -70,8 +100,10 @@ public class AdminLowerActivity extends AppCompatActivity implements AdminAdapte
         SQLiteDatabase db = databaseHelper.getReadableDatabase();
 
         // Truy vấn cơ sở dữ liệu để lấy danh sách người dùng khác
-        String query = "SELECT * FROM users WHERE _id <> ? AND role = 0";
-        String[] selectionArgs = {String.valueOf(currentUserId)};
+//        String query = "SELECT * FROM users WHERE _id <> ?";
+        String query = "SELECT * FROM users WHERE _id <> ? AND role <> ? ";
+
+        String[] selectionArgs = {String.valueOf(currentUserId), "2"};
         Cursor cursor = db.rawQuery(query, selectionArgs);
 
         // Duyệt qua từng hàng trong Cursor
@@ -92,7 +124,6 @@ public class AdminLowerActivity extends AppCompatActivity implements AdminAdapte
         cursor.close();
         return userOtherList;
     }
-
     @Override
     public void onDeleteUser(User user) {
         // Handle the delete operation here
@@ -112,7 +143,7 @@ public class AdminLowerActivity extends AppCompatActivity implements AdminAdapte
                     public void onSuccess(Void aVoid) {
                         // Xóa thành công, thực hiện các thao tác khác
                         // Ví dụ: cập nhật lại giao diện, thông báo thành công, vv.
-                        Intent intent = new Intent(getApplication(), AdminLowerActivity.class);
+                        Intent intent = new Intent(getApplication(), UserManagementActivity.class);
                         startActivity(intent);
                     }
                 })

@@ -64,8 +64,9 @@ public class AddUserActivity extends AppCompatActivity {
 
                 // Thực hiện việc thêm người dùng vào cơ sở dữ liệu
                 addUserToDatabase(name, phone, email, password, avatarPath, roleU);
-                Intent intent = new Intent(getApplication(), AdminActivity.class);
+                Intent intent = new Intent(getApplication(), UserManagementActivity.class);
                 startActivity(intent);
+//                finish();
             }
         });
 

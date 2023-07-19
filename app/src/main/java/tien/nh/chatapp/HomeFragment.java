@@ -104,9 +104,21 @@ public class HomeFragment extends Fragment implements UserAdapter.OnAddFriendCli
         ChatDatabaseHelper databaseHelper = new ChatDatabaseHelper(requireContext());
         SQLiteDatabase db = databaseHelper.getReadableDatabase();
 
-        // Truy vấn cơ sở dữ liệu để lấy danh sách người dùng khác
-        String query = "SELECT * FROM users WHERE _id <> ? AND role = 0";
-        String[] selectionArgs = {String.valueOf(currentUserId)};
+         // Truy vấn cơ sở dữ liệu để lấy danh sách người dùng khác
+        String query = "SELECT * FROM " + ChatDatabaseHelper.TABLE_USERS +
+                " WHERE " + ChatDatabaseHelper.COLUMN_ID + " NOT IN (" +
+                " SELECT " + ChatDatabaseHelper.COLUMN_FRIENDSHIP_USER2 + " FROM " + ChatDatabaseHelper.TABLE_FRIENDSHIPS +
+                " WHERE " + ChatDatabaseHelper.COLUMN_FRIENDSHIP_USER1 + " = ?" +
+                " AND " + ChatDatabaseHelper.COLUMN_FRIENDSHIP_STATUS + " = 'accepted'" +
+                " UNION " +
+                " SELECT " + ChatDatabaseHelper.COLUMN_FRIENDSHIP_USER1 + " FROM " + ChatDatabaseHelper.TABLE_FRIENDSHIPS +
+                " WHERE " + ChatDatabaseHelper.COLUMN_FRIENDSHIP_USER2 + " = ?" +
+                " AND " + ChatDatabaseHelper.COLUMN_FRIENDSHIP_STATUS + " = 'accepted')" +
+                " AND " + ChatDatabaseHelper.COLUMN_ID + " <> ?" +
+                " AND " + ChatDatabaseHelper.COLUMN_USER_ROLE + " = 0";
+
+        String[] selectionArgs = {String.valueOf(currentUserId), String.valueOf(currentUserId), String.valueOf(currentUserId)};
+//        String[] selectionArgs = {String.valueOf(currentUserId), String.valueOf(currentUserId)};
         Cursor cursor = db.rawQuery(query, selectionArgs);
 
         // Duyệt qua từng hàng trong Cursor
@@ -146,42 +158,32 @@ public class HomeFragment extends Fragment implements UserAdapter.OnAddFriendCli
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         String formattedTime = sdf.format(currentTime);
 
-        // Thực hiện truy vấn INSERT để thêm mối quan hệ kết bạn
-        ContentValues values = new ContentValues();
-        values.put("user1", currentUserId); // ID của người dùng hiện tại
-        values.put("user2", friendUserId); // ID của người dùng muốn kết bạn
-        values.put("friendship_status", "waiting"); // ID của người dùng muốn kết bạn
 
-        values.put("friendship_created_date", formattedTime);
+//         Trước khi thêm lời mời kết bạn, kiểm tra sự tồn tại của lời mời đã gửi từ user1 đến user2
+        if (isFriendshipRequestSent(currentUserId, friendUserId)) {
+            // Lời mời kết bạn đã tồn tại, không thêm vào cơ sở dữ liệu
+            Toast.makeText(getContext(), "Friendship request already sent", Toast.LENGTH_SHORT).show();
+        } else {
+            // Thêm lời mời kết bạn vào cơ sở dữ liệu
+            //
+            // Thực hiện truy vấn INSERT để thêm mối quan hệ kết bạn
+            ContentValues values = new ContentValues();
+            values.put("user1", currentUserId); // ID của người dùng hiện tại
+            values.put("user2", friendUserId); // ID của người dùng muốn kết bạn
+            values.put("friendship_status", "waiting"); // ID của người dùng muốn kết bạn
 
-        addDataToFireBase(currentUserId, friendUserId, "waiting", formattedTime);
-        long insertedId = db.insert("friendships", null, values);
+            values.put("friendship_created_date", formattedTime);
+            addDataToFireBase(currentUserId, friendUserId, "waiting", formattedTime);
+            long insertedId = db.insert("friendships", null, values);
+            if (insertedId > -1) {
+                // Insertion successful
+                Toast.makeText(requireContext(), "ADD FRIEND SUCCESS", Toast.LENGTH_SHORT).show();
+            } else {
+                // Insertion failed
+                Toast.makeText(requireContext(), "ADD FRIEND FAILED", Toast.LENGTH_SHORT).show();
+            }
 
-        // Trước khi thêm lời mời kết bạn, kiểm tra sự tồn tại của lời mời đã gửi từ user1 đến user2
-//        if (isFriendshipRequestSent(currentUserId, friendUserId)) {
-//            // Lời mời kết bạn đã tồn tại, không thêm vào cơ sở dữ liệu
-//            Toast.makeText(getContext(), "Friendship request already sent", Toast.LENGTH_SHORT).show();
-//        } else {
-//            // Thêm lời mời kết bạn vào cơ sở dữ liệu
-//            //
-//            // Thực hiện truy vấn INSERT để thêm mối quan hệ kết bạn
-//            ContentValues values = new ContentValues();
-//            values.put("user1", currentUserId); // ID của người dùng hiện tại
-//            values.put("user2", friendUserId); // ID của người dùng muốn kết bạn
-//            values.put("friendship_status", "waiting"); // ID của người dùng muốn kết bạn
-//
-//            values.put("friendship_created_date", formattedTime);
-//
-//            long insertedId = db.insert("friendships", null, values);
-//            if (insertedId > -1) {
-//                // Insertion successful
-//                Toast.makeText(requireContext(), "ADD FRIEND SUCCESS", Toast.LENGTH_SHORT).show();
-//            } else {
-//                // Insertion failed
-//                Toast.makeText(requireContext(), "ADD FRIEND FAILED", Toast.LENGTH_SHORT).show();
-//            }
-//
-//        }
+        }
         // Đóng kết nối cơ sở dữ liệu sau khi sử dụng
         db.close();
 
@@ -256,16 +258,18 @@ public class HomeFragment extends Fragment implements UserAdapter.OnAddFriendCli
         ChatDatabaseHelper databaseHelper = new ChatDatabaseHelper(requireContext());
         SQLiteDatabase db = databaseHelper.getReadableDatabase();
 
-        String query = "SELECT * FROM friendships WHERE user1 = ? AND user2 = ?";
-        String[] selectionArgs = {String.valueOf(user1Id), String.valueOf(user2Id)};
+        String query = "SELECT * FROM friendships " +
+                "WHERE (user1 = ? AND user2 = ?) OR (user1 = ? AND user2 = ?)";
+
+        String[] selectionArgs = {String.valueOf(user1Id), String.valueOf(user2Id), String.valueOf(user2Id), String.valueOf(user1Id)};
         Cursor cursor = db.rawQuery(query, selectionArgs);
 
-        boolean requestSent = cursor.getCount() > 0;
+        boolean isFriendshipExist = cursor.getCount() > 0;
 
         cursor.close();
         db.close();
 
-        return requestSent;
+        return isFriendshipExist;
     }
     @Override
     public void onAddFriendClick(int friendUserId) {

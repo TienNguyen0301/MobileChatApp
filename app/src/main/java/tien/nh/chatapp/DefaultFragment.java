@@ -131,8 +131,6 @@ public class DefaultFragment extends Fragment  {
         });
 
 
-
-
         return rootView;
     }
 

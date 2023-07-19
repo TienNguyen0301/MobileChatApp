@@ -67,7 +67,8 @@ public class SearchMessageActivity extends AppCompatActivity {
     private void searchMessages(String keyword) {
         ArrayList<Message> searchResults = new ArrayList<>();
         for (Message message : messagesList) {
-            if (message.getMessage_text().toLowerCase().contains(keyword.toLowerCase())) {
+            String messageText = message.getMessage_text();
+            if (messageText != null && messageText.toLowerCase().contains(keyword.toLowerCase())) {
                 searchResults.add(message);
             }
         }

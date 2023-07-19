@@ -38,7 +38,6 @@ public class MessageHistoryActivity extends AppCompatActivity {
 
         retrieveMessagesAndSetAdapter(currentUserId, receiverId);
 
-
     }
 
     private void retrieveMessagesAndSetAdapter(int currentId, int receiverId) {
@@ -52,7 +51,9 @@ public class MessageHistoryActivity extends AppCompatActivity {
                     if (task.isSuccessful()) {
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             Message message = document.toObject(Message.class);
-                            messagesList.add(message);
+                            if (message.getImage() == null){
+                                messagesList.add(message);
+                            }
                         }
                         // Lấy tin nhắn ngược lại (người gửi là receiverId và người nhận là currentId)
                         messagesRef.whereEqualTo(ChatDatabaseHelper.COLUMN_SENDER_ID, receiverId)
@@ -62,7 +63,9 @@ public class MessageHistoryActivity extends AppCompatActivity {
                                     if (task1.isSuccessful()) {
                                         for (QueryDocumentSnapshot document : task1.getResult()) {
                                             Message message = document.toObject(Message.class);
-                                            messagesList.add(message);
+                                            if (message.getImage() == null){
+                                                messagesList.add(message);
+                                            }
                                         }
                                         // Sắp xếp danh sách tin nhắn theo thời gian
                                         Collections.sort(messagesList, new Comparator<Message>() {

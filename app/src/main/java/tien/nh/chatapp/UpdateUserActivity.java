@@ -123,18 +123,7 @@ public class UpdateUserActivity extends AppCompatActivity {
                                     // Cập nhật thành công trên Firebase Firestore
                                     // Tiếp tục xử lý hoặc hiển thị thông báo thành công
                                     // Create an intent to pass back the updated user information
-                                    Intent intent = new Intent(getApplication(), AdminActivity.class);
-////                    intent.putExtra("userId", id);
-//                                    intent.putExtra("userName", updatedUserName);
-//                                    intent.putExtra("userEmail", updatedUserEmail);
-//                                    intent.putExtra("avatar", newAvatarPath);
-//                                    intent.putExtra("phone", updatedPhone);
-//                                    intent.putExtra("role", role);
-
-
-
-                                    // Set the result code and intent to return to the previous activity
-//                    startActivityForResult(intent, UPDATE_USER_REQUEST_CODE);
+                                    Intent intent = new Intent(getApplication(), UserManagementActivity.class);
                                     startActivity(intent);
                                 }
                             })
@@ -162,7 +151,7 @@ public class UpdateUserActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 // Create an intent to pass back the updated user information
-                Intent intent = new Intent(getApplication(), AdminActivity.class);
+                Intent intent = new Intent(getApplication(), UserManagementActivity.class);
                 startActivity(intent);
             }
         });

@@ -19,6 +19,15 @@
         android:theme="@style/Theme.ChatApp"
         tools:targetApi="31">
         <activity
+            android:name=".AdminListFriendUserActivity"
+            android:exported="false" />
+        <activity
+            android:name=".RelationshipManagerActivity"
+            android:exported="false" />
+        <activity
+            android:name=".UserManagementActivity"
+            android:exported="false" />
+        <activity
             android:name=".MessageHistoryActivity"
             android:exported="false" />
         <activity

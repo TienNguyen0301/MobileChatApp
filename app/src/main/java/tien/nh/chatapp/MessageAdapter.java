@@ -151,9 +151,8 @@ public  class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             // Ví dụ: hiển thị ảnh trong ImageView
             Glide.with(binding.imageMessage.getContext())
                     .load(message.getImage())
-                    .apply(new RequestOptions().placeholder(R.drawable.ic_facebook)) // Placeholder image while loading
+                    .apply(new RequestOptions().placeholder(R.drawable.rounded_image)) // Placeholder image while loading
                     .into(binding.imageMessage);
-            binding.textDateTime.setText(message.getImage().toString());
         }
     }
 
@@ -171,8 +170,9 @@ public  class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             // Ví dụ: hiển thị ảnh trong ImageView
             Glide.with(binding.imageMessage.getContext())
                     .load(message.getImage())
-                    .apply(new RequestOptions().placeholder(R.drawable.ic_error)) // Placeholder image while loading
+                    .apply(new RequestOptions().placeholder(R.drawable.rounded_image)) // Placeholder image while loading
                     .into(binding.imageMessage);
+
             Glide.with(binding.imgProfile.getContext())
                     .load(user.getAvatar())
                     .error(android.R.drawable.stat_notify_error)

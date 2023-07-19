@@ -89,7 +89,7 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
         textMessage = (EditText) findViewById(R.id.textMessage) ;
         btnSendImage = (ImageButton) findViewById(R.id.send_img) ;
         btn_back = (ImageView) findViewById(R.id.btn_back);
-        statusUser = (TextView) findViewById(R.id.statusUser);
+        statusUser = (TextView) findViewById(R.id.status_User);
         setting_user = (ImageView) findViewById(R.id.setting_user);
 
 
@@ -181,28 +181,29 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
 
         FirebaseFirestore database = FirebaseFirestore.getInstance();
 
-        DocumentReference userRef = database.collection(ChatDatabaseHelper.TABLE_USERS).document(String.valueOf(currentUserId));
-        userRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
-            @Override
-            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException error) {
-                if (error != null) {
-                    // Xử lý lỗi khi nhận sự kiện thay đổi dữ liệu
-                    return;
-                }
 
-                if (snapshot != null && snapshot.exists()) {
-                    // Lấy giá trị của trường "status"
-                    String status = snapshot.getString("status");
-                   statusUser.setText(status);
-                }
-            }
-        });
+//        DocumentReference userRef = database.collection(ChatDatabaseHelper.TABLE_USERS).document(String.valueOf(id));
+//        userRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
+//            @Override
+//            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException error) {
+//                if (error != null) {
+//                    // Xử lý lỗi khi nhận sự kiện thay đổi dữ liệu
+//                    return;
+//                }
+//
+//                if (snapshot != null && snapshot.exists()) {
+//                    // Lấy giá trị của trường "status"
+//                    String status = snapshot.getString("status");
+//                   statusUser.setText(status);
+//                }
+//            }
+//        });
+
 
 //        getSupportLoaderManager().restartLoader(LOADER_ID, null, this);
 
 
         CollectionReference messagesRef = database.collection(ChatDatabaseHelper.TABLE_MESSAGES);
-
         messagesRef.addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot querySnapshot, @Nullable FirebaseFirestoreException error) {
@@ -221,6 +222,8 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
                 }
             }
         });
+
+
 
     }
 

@@ -81,6 +81,7 @@ public class HomeActivity extends AppCompatActivity implements BottomNavigationV
                 if (value != null && !value.isEmpty()) {
                     status_user.setText("Online");
 
+
                 }
             }
         });

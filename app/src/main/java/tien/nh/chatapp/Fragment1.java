@@ -150,7 +150,6 @@ public class Fragment1 extends Fragment implements FriendAdapter.OnAcceptFriendC
             db.execSQL(deleteQuery);
             cursorDelete.close(); // Đóng con trỏ sau khi đã hoàn thành việc sử dụng nó
         }
-
         db.close();
     }
 
