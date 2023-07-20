@@ -1,5 +1,6 @@
 package tien.nh.chatapp;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -9,6 +10,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.content.Intent;
+
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -35,22 +38,27 @@ import com.google.firebase.storage.UploadTask;
 
 
 
+
 public class RegisterActivity extends AppCompatActivity implements View.OnClickListener {
     Button btnRegister, btnUpAvatar;
     EditText userName, userEmail, userPassword, userPhone;
     ChatDatabaseHelper dbHelper;
+
     private ActivityResultLauncher<Intent> imagePickerLauncher;
     private Uri selectedImageUri;
 
     private User user;
 
     String imagePath;
+    // Khởi tạo CallbackManager trong phương thức onCreate
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
+
+
 
         //register firebase
         userName = (EditText) findViewById(R.id.editTextName);
@@ -88,7 +96,11 @@ public class RegisterActivity extends AppCompatActivity implements View.OnClickL
                     }
                 });
 
+
+
     }
+
+
 
 
 

@@ -34,6 +34,7 @@ import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestoreException;
@@ -43,6 +44,7 @@ import com.google.firebase.storage.UploadTask;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +52,7 @@ import java.util.List;
 import tien.nh.chatapp.databinding.ActivityChatBinding;
 
 
-public class ChatActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
+public class ChatActivity extends AppCompatActivity{
 
     TextView txtUsername, receiverText, senderText, statusUser;
     ImageView imgUser, btn_back, setting_user;
@@ -60,16 +62,11 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
     RecyclerView chatRecycleView;
 
 
-    private ActivityResultLauncher<Intent> imagePickerLauncher;
-    private Uri selectedImageUri;
-    private static final int REQUEST_IMAGE_PICK = 1;
-
     private  MessageAdapter messageAdapter;
     private List<Message> messages;
     private ActivityChatBinding binding;
     private static final int PICK_IMAGE_REQUEST_CODE = 2;
 
-    private static final int LOADER_ID = 1; // ID của CursorLoader
     private boolean isImageSent = false;
     String imagePath;
 
@@ -80,7 +77,6 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
         super.onCreate(savedInstanceState);
         binding = ActivityChatBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-//        setContentView(R.layout.activity_chat);
 
         chatRecycleView = (RecyclerView) findViewById(R.id.chatRecycleView);
         txtUsername = (TextView) findViewById(R.id.chat_name);
@@ -92,8 +88,6 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
         statusUser = (TextView) findViewById(R.id.status_User);
         setting_user = (ImageView) findViewById(R.id.setting_user);
 
-
-//        init();
 
         // Nhận thông tin user từ Intent
         Intent intent = getIntent();
@@ -107,11 +101,11 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
         TempStorage.getInstance().setReceiverId(id);
 
         User user = new User(id, name, phone, email,avatarPath, role);
-//        messageAdapter = new MessageAdapter(user);
 
         messages = new ArrayList<>();
         SharedPreferences sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
         int currentUserId = sharedPreferences.getInt("currentUserId", 0);
+
         messageAdapter = new MessageAdapter(messages, currentUserId, user);
         chatRecycleView.setAdapter(messageAdapter);
 
@@ -135,8 +129,6 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
                onBackPressed();
             }
         });
-
-
         btnSendImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -146,7 +138,6 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
                 startActivityForResult(intent, PICK_IMAGE_REQUEST_CODE);
             }
         });
-
         setting_user.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -180,53 +171,58 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
         });
 
         FirebaseFirestore database = FirebaseFirestore.getInstance();
+        DocumentReference userRef = database.collection(ChatDatabaseHelper.TABLE_USERS).document(String.valueOf(id));
+        userRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
+            @Override
+            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException error) {
+                if (error != null) {
+                    // Xử lý lỗi khi nhận sự kiện thay đổi dữ liệu
+                    return;
+                }
 
-
-//        DocumentReference userRef = database.collection(ChatDatabaseHelper.TABLE_USERS).document(String.valueOf(id));
-//        userRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
-//            @Override
-//            public void onEvent(@Nullable DocumentSnapshot snapshot, @Nullable FirebaseFirestoreException error) {
-//                if (error != null) {
-//                    // Xử lý lỗi khi nhận sự kiện thay đổi dữ liệu
-//                    return;
-//                }
-//
-//                if (snapshot != null && snapshot.exists()) {
-//                    // Lấy giá trị của trường "status"
-//                    String status = snapshot.getString("status");
-//                   statusUser.setText(status);
-//                }
-//            }
-//        });
-
-
-//        getSupportLoaderManager().restartLoader(LOADER_ID, null, this);
+                if (snapshot != null && snapshot.exists()) {
+                    // Lấy giá trị của trường "status"
+                    String status = snapshot.getString("status");
+                   statusUser.setText(status);
+                }
+            }
+        });
 
 
         CollectionReference messagesRef = database.collection(ChatDatabaseHelper.TABLE_MESSAGES);
-        messagesRef.addSnapshotListener(new EventListener<QuerySnapshot>() {
+        // Query for messages where sender_id is either currentUserId or receiveId, and receiver_id is either currentUserId or receiveId
+        Query query = messagesRef.whereIn(ChatDatabaseHelper.COLUMN_SENDER_ID, Arrays.asList(currentUserId, id))
+                .whereIn(ChatDatabaseHelper.COLUMN_RECEIVER_ID, Arrays.asList(currentUserId, id));
+
+        query.addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(@Nullable QuerySnapshot querySnapshot, @Nullable FirebaseFirestoreException error) {
                 if (error != null) {
-                    // Xử lý lỗi nếu có
+                    // Handle the error if there's any
                     Log.e("ChatActivity", "Error getting messages: " + error.getMessage());
                     return;
                 }
 
                 if (querySnapshot != null) {
                     // Lấy danh sách tin nhắn từ querySnapshot
-                    List<Message> messages = querySnapshot.toObjects(Message.class);
+                    messages.clear(); // Clear the existing list
+                    List<Message> newMessages = querySnapshot.toObjects(Message.class);
+                    messages.addAll(newMessages);
+
                     // Cập nhật danh sách tin nhắn trong adapter
-                    messageAdapter.updateData(messages);
+                    messageAdapter.notifyDataSetChanged();
                     chatRecycleView.scrollToPosition(messages.size() - 1);
                 }
             }
         });
 
-
-
     }
 
+    private void updateUI() {
+        messageAdapter.notifyDataSetChanged();
+        Log.d("ChatActivity", "Scrolling to position: " + (messages.size() - 1)); // Kiểm tra log
+        binding.chatRecycleView.scrollToPosition(messages.size() - 1);
+    }
 
     @Override
     public void onBackPressed() {
@@ -240,27 +236,16 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
-    private void sendMessageFireBase(int friendship_id, int senderId, int receiverId, String messageText, String status, String timestamp) {
-        FirebaseFirestore database = FirebaseFirestore.getInstance();
-        CollectionReference usersRef = database.collection(ChatDatabaseHelper.TABLE_MESSAGES);
-
-
-        usersRef.get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                QuerySnapshot querySnapshot = task.getResult();
-                List<DocumentSnapshot> documents = querySnapshot.getDocuments();
-
-                long newId = documents.size() + 1; // Tạo custom ID tăng dần
-                String documentId = String.format("%03d", newId);
-
-                // Tạo tài liệu mới với custom ID
-                createNewMessage(usersRef, String.valueOf(documentId), friendship_id, senderId, receiverId, messageText, status, timestamp);
-            } else {
-                // Lỗi khi truy vấn bộ sưu tập "messages"
-                Toast.makeText(getApplicationContext(), "Failed to query messages collection", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
+//    // Hàm lọc các tin nhắn có senderId hoặc receiverId tương ứng với thông tin người gửi và người nhận
+//    private List<Message> filterMessages(List<Message> allMessages, int senderId, int receiverId) {
+//        List<Message> filteredMessages = new ArrayList<>();
+//        for (Message message : allMessages) {
+//            if (message.getSender_id() == senderId || message.getSender_id() == receiverId) {
+//                filteredMessages.add(message);
+//            }
+//        }
+//        return filteredMessages;
+//    }
 
     private void createNewMessage(CollectionReference  userRef, String documentId, int friendship_id, int senderId, int receiverId, String messageText, String status, String timestamp) {
         // Tăng giá trị documentIdCounter lên 1
@@ -290,7 +275,27 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
                 });
     }
 
+    private void sendMessageFireBase(int friendship_id, int senderId, int receiverId, String messageText, String status, String timestamp) {
+        FirebaseFirestore database = FirebaseFirestore.getInstance();
+        CollectionReference usersRef = database.collection(ChatDatabaseHelper.TABLE_MESSAGES);
 
+
+        usersRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                QuerySnapshot querySnapshot = task.getResult();
+                List<DocumentSnapshot> documents = querySnapshot.getDocuments();
+
+                long newId = documents.size() + 1; // Tạo custom ID tăng dần
+                String documentId = String.format("%03d", newId);
+
+                // Tạo tài liệu mới với custom ID
+                createNewMessage(usersRef, String.valueOf(documentId), friendship_id, senderId, receiverId, messageText, status, timestamp);
+            } else {
+                // Lỗi khi truy vấn bộ sưu tập "messages"
+                Toast.makeText(getApplicationContext(), "Failed to query messages collection", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
     private void sendMessage(int receiveId) {
         ChatDatabaseHelper databaseHelper = new ChatDatabaseHelper(getApplicationContext());
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
@@ -299,10 +304,6 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
         int currentUserId = sharedPreferences.getInt("currentUserId", 0);
         String query = "SELECT _id FROM friendships " +
                 "WHERE (user1 = ? AND user2 = ?) OR (user1 = ? AND user2 = ?)";
-//        String query = "SELECT users.* FROM users " +
-//                "INNER JOIN friendships ON (users._id = friendships.user1 OR users._id = friendships.user2) " +
-//                "WHERE (friendships.user1 = ? OR friendships.user2 = ?) AND friendships.friendship_status = 'accepted' " +
-//                "AND users._id != ?";
         String[] selectionArgs = {String.valueOf(receiveId), String.valueOf(currentUserId), String.valueOf(currentUserId), String.valueOf(receiveId)};
 
         Cursor cursor = db.rawQuery(query, selectionArgs);
@@ -329,16 +330,22 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
                 sendMessageFireBase(friendshipId,currentUserId,receiveId, message,"status",formattedTime);
                 long insertedId = db.insert("messages", null, values);
                 if (insertedId > -1) {
-                    getSupportLoaderManager().restartLoader(LOADER_ID, null, this);
                     Toast.makeText(this, "Success", Toast.LENGTH_SHORT).show();
+                    // Add the message to the local list
+                    messages.add(new Message(friendshipId, currentUserId, receiveId, message, "status", formattedTime));
+
+                    // Notify the adapter that the data has changed
+                    messageAdapter.notifyDataSetChanged();
+                    chatRecycleView.scrollToPosition(messages.size() - 1);
                     textMessage.setText("");
-                    updateUI(); // Thêm dòng này để cập nhật giao diện người dùng
+                    updateUI();
                 } else {
                     Toast.makeText(this,"Failed", Toast.LENGTH_SHORT).show();
                 }
             }
         }
     }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -392,85 +399,6 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
         }
     }
 
-    @NonNull
-    @Override
-    public Loader<Cursor> onCreateLoader(int id, @Nullable Bundle args) {
-        Uri baseUri = Uri.parse("content://tien.nh.chatapp.provider"); // Địa chỉ URI cơ sở
-        Uri uriMessage = Uri.withAppendedPath(baseUri, ChatDatabaseHelper.TABLE_MESSAGES); // URI cho bảng tin nhắn
-        // Tạo và trả về CursorLoader cho bảng tin nhắn
-        Uri uri = uriMessage; // Thay thế CONTENT_URI bằng URI tương ứng của bảng tin nhắn trong cơ sở dữ liệu SQLite của bạn
-        String[] projection = null; // Các cột bạn muốn lấy từ bảng (null sẽ lấy tất cả các cột)
-        String selection = null; // Điều kiện lựa chọn (null nếu không có)
-        String[] selectionArgs = null; // Đối số cho điều kiện lựa chọn (null nếu không có)
-        String sortOrder = null; // Thứ tự sắp xếp (null nếu không cần)
-        return new CursorLoader(this, uri, projection, selection, selectionArgs, sortOrder);
-    }
-
-    @Override
-    public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
-        // Xử lý khi dữ liệu đã tải xong vào Cursor
-        if (data != null) {
-            // Đọc dữ liệu từ Cursor và cập nhật danh sách tin nhắn
-            List<Message> newMessages = readMessagesFromCursor(data);
-            messages.clear();
-            messages.addAll(newMessages);
-            messageAdapter.notifyDataSetChanged();
-            updateUI();
-        }
-
-    }
-
-    @Override
-    public void onLoaderReset(@NonNull Loader<Cursor> loader) {
-        // Reset dữ liệu khi CursorLoader được thiết lập lại
-        messages.clear();
-        messageAdapter.notifyDataSetChanged();
-    }
-
-    private List<Message> readMessagesFromCursor(Cursor cursor) {
-        // Xử lý cursor và trả về danh sách tin nhắn
-        List<Message> messages = new ArrayList<>();
-        SharedPreferences sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
-        int currentUserId = sharedPreferences.getInt("currentUserId", 0);
-
-        Intent intent = getIntent();
-        int selectedUserId = intent.getIntExtra("_id", 0);
-        // Đọc dữ liệu từ cursor và thêm vào danh sách tin nhắn
-        if (cursor.moveToFirst()) {
-            do {
-                int messageId = cursor.getInt(cursor.getColumnIndexOrThrow("_id"));
-                int friendshipId = cursor.getInt(cursor.getColumnIndexOrThrow("friendship_id"));
-                int senderId = cursor.getInt(cursor.getColumnIndexOrThrow("sender_id"));
-                int receiverId = cursor.getInt(cursor.getColumnIndexOrThrow("receiver_id"));
-                String messageText = cursor.getString(cursor.getColumnIndexOrThrow("message_text"));
-                String timestamp = cursor.getString(cursor.getColumnIndexOrThrow("timestamp"));
-                String image = cursor.getString(cursor.getColumnIndexOrThrow("image"));
-                String status = cursor.getString(cursor.getColumnIndexOrThrow("status"));
-
-                // Kiểm tra nếu tin nhắn là của người dùng hiện tại
-                if ((senderId == currentUserId && receiverId == selectedUserId) || (senderId == selectedUserId && receiverId == currentUserId)) {
-                    // Tạo đối tượng Message và thêm vào danh sách
-                    Message message = new Message( messageId,friendshipId, senderId, receiverId, messageText, image, status,timestamp);
-                    messages.add(message);
-//                    messageAdapter.addReceivedImageMessage(message);
-                }
-//
-            } while (cursor.moveToNext());
-        }
-
-        // Đóng cursor sau khi hoàn thành
-        cursor.close();
-
-        return messages;
-    }
-
-    private void updateUI() {
-        messageAdapter.notifyDataSetChanged();
-        Log.d("ChatActivity", "Scrolling to position: " + (messages.size() - 1)); // Kiểm tra log
-        binding.chatRecycleView.scrollToPosition(messages.size() - 1);
-    }
-
-
     private void sendImageFireBase(String image) {
         ChatDatabaseHelper databaseHelper = new ChatDatabaseHelper(getApplicationContext());
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
@@ -500,26 +428,7 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
             int friendshipId = cursor.getInt(cursor.getColumnIndexOrThrow("_id"));
             // Sử dụng friendshipId cho các xử lý tiếp theo
             sendMessageImageFireBase(friendshipId, currentUserId, receiveId,imagePathString, "status", formattedTime);
-
-//            if (message.length() > 0) {
-//                ContentValues values = new ContentValues();
-//                values.put("sender_id", currentUserId);
-//                values.put("receiver_id", receiveId);
-//                values.put("friendship_id", friendshipId);
-//                values.put("timestamp", formattedTime);
-//                values.put("image", image);
-//                values.put("status", "status");
-
-//                long insertedId = db.insert("messages", null, values);
-//                if (insertedId > -1) {
-//                    getSupportLoaderManager().restartLoader(LOADER_ID, null, this);
-//                    Toast.makeText(this, "Success", Toast.LENGTH_SHORT).show();
-//                    textMessage.setText("");
-//                    updateUI(); // Thêm dòng này để cập nhật giao diện người dùng
-//                } else {
-//                    Toast.makeText(this,"Failed", Toast.LENGTH_SHORT).show();
-//                }
-//            }
+            updateUI();
         }
     }
 
@@ -573,9 +482,6 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
                 });
     }
 
-
-
-    // Phương thức để lấy đường dẫn của ảnh từ Uri
     private String getImagePathFromUri(Uri uri) {
         String imagePath = null;
         String[] projection = {MediaStore.Images.Media.DATA};
@@ -588,55 +494,5 @@ public class ChatActivity extends AppCompatActivity implements LoaderManager.Loa
         return imagePath;
     }
 
-//    private void saveImageToDatabase(String image, int senderId, int receiverId) {
-//       if (!isImageSent  && image != null && !image.isEmpty()) {
-//           isImageSent = true;
-//           ChatDatabaseHelper databaseHelper = new ChatDatabaseHelper(getApplicationContext());
-//           SQLiteDatabase db = databaseHelper.getWritableDatabase();
-//
-//           String query = "SELECT _id FROM friendships " +
-//                   "WHERE (user1 = ? AND user2 = ?) OR (user1 = ? AND user2 = ?)";
-//           String[] selectionArgs = {String.valueOf(receiverId), String.valueOf(senderId), String.valueOf(senderId), String.valueOf(receiverId)};
-//
-//           // Lấy thời gian hiện tại
-//           Date currentTime = new Date();
-//           // Định dạng thời gian
-//           SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-//           String formattedTime = sdf.format(currentTime);
-//
-//           Cursor cursor = db.rawQuery(query, selectionArgs);
-//           if (cursor.moveToFirst()) {
-//               int friendshipId = cursor.getInt(cursor.getColumnIndexOrThrow("_id"));
-//               ContentValues values = new ContentValues();
-//               values.put("friendship_id", friendshipId);
-//               values.put("sender_id", senderId);
-//               values.put("receiver_id", receiverId);
-////               values.put("message_text", "");
-//               values.put("timestamp", formattedTime);
-//
-//                   values.put("image", image);
-//
-//               values.put("status", "status");
-//
-//
-//               long insertedId = db.insert("messages", null, values);
-//               if (insertedId > -1) {
-////                getSupportLoaderManager().restartLoader(LOADER_ID, null, this);
-//                   Toast.makeText(this, "Image saved to database", Toast.LENGTH_SHORT).show();
-//                   if (!imagePath.isEmpty()) {
-//                       Message imageMessage = new Message( friendshipId, senderId, receiverId, imagePath, "status", formattedTime, true);
-//                       messageAdapter.addImageMessage(imageMessage);
-//                   }
-//                   updateUI(); // Cập nhật giao diện người dùng
-//               }else {
-//                   // Lưu thất bại
-//                   Toast.makeText(this, "Failed to save image to database", Toast.LENGTH_SHORT).show();
-//               }
-//
-//           }
-//           cursor.close();
-//           db.close();
-//       }
-//    }
 }
 

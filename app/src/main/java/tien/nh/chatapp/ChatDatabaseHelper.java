@@ -6,15 +6,13 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class ChatDatabaseHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "chat.db";
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 4;
 
 
     // Table names
     public static final String TABLE_USERS = "users";
     public static final String TABLE_MESSAGES = "messages";
     public static final String TABLE_FRIENDSHIPS = "friendships";
-
-
 
 
     // Users table column
@@ -100,13 +98,7 @@ public class ChatDatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_USERS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_FRIENDSHIPS);
         db.execSQL("DROP TABLE IF EXISTS " + TABLE_MESSAGES);
-
-        if (oldVersion < 2) {
-            // Thêm cột "avatar" vào bảng "users"
-//            db.execSQL("ALTER TABLE users ADD COLUMN avatar TEXT");
-            onCreate(db);
-        }
-
+        
         // Create fresh tables
         onCreate(db);
     }

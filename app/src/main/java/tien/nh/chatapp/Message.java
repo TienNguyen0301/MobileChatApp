@@ -12,6 +12,16 @@ public class Message {
 
     public Message() {
     }
+
+    public Message(int friendship_id, int sender_id, int receiver_id, String message_text, String status, String timestamp) {
+        this.friendship_id = friendship_id;
+        this.sender_id = sender_id;
+        this.receiver_id = receiver_id;
+        this.message_text = message_text;
+        this.timestamp = timestamp;
+        this.status = status;
+    }
+
     public Message(int id,int friendship_id, int sender_id, int receiver_id, String message_text, String image, String status, String timestamp) {
         this.id = id;
         this.friendship_id = friendship_id;
@@ -51,4 +61,7 @@ public class Message {
         return status;
     }
 
+    public int getFriendship_id() {
+        return friendship_id;
+    }
 }

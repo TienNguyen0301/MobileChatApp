@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.database.sqlite.SQLiteDatabase;
 import android.content.Context;
@@ -21,12 +22,16 @@ import android.util.Log;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 
+
+import java.util.HashMap;
+import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -37,10 +42,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     ChatDatabaseHelper dbHelper = new ChatDatabaseHelper(this); // Replace 'this' with your activity or fragment context
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
 
         registerId = (TextView) findViewById(R.id.register_id);
         btnLogin = (Button) findViewById(R.id.login_btn);
@@ -108,6 +117,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //        resetDatabase(this);
 
     }
+
+
 
 
 
@@ -428,4 +439,72 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         }
     }
+
+    private void registerUser(String name, String phone, String password, String email, String avatar, String status, int role) {
+        FirebaseFirestore database = FirebaseFirestore.getInstance();
+        CollectionReference usersRef = database.collection(ChatDatabaseHelper.TABLE_USERS);
+
+        // Kiểm tra xem bộ sưu tập "users" có bất kỳ tài liệu nào hay không
+        usersRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                QuerySnapshot querySnapshot = task.getResult();
+                if (querySnapshot.isEmpty()) {
+                    // Bộ sưu tập "users" chưa có tài liệu nào, tạo một tài liệu mới với ID là 1
+                    createNewUser(usersRef.document("1"), name, phone, password, email, avatar, status, role);
+                } else {
+                    // Bộ sưu tập "users" đã có tài liệu, sử dụng transaction để tăng giá trị ID lên 1 và tạo tài liệu mới
+                    createUserWithIncrementedId(usersRef, name, phone, password, email, avatar, status, role);
+                }
+            } else {
+                // Lỗi khi truy vấn bộ sưu tập "users"
+                Toast.makeText(getApplicationContext(), "Failed to query users collection", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void createNewUser(DocumentReference userRef, String name, String phone, String password, String email, String avatar, String status, int role) {
+        HashMap<String, Object> userData = new HashMap<>();
+        userData.put("name", name);
+        userData.put("phone", phone);
+        userData.put("password", password);
+        userData.put("email", email);
+        userData.put("avatar", avatar);
+        userData.put("status", status);
+        userData.put("role", role);
+
+        // Tạo tài liệu mới với ID là 1
+        userRef.set(userData).addOnSuccessListener(aVoid -> {
+            // Đăng ký người dùng thành công
+            Toast.makeText(getApplicationContext(), "User registered successfully", Toast.LENGTH_SHORT).show();
+        }).addOnFailureListener(e -> {
+            // Lỗi khi đăng ký người dùng
+            Toast.makeText(getApplicationContext(), "Failed to register user", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void createUserWithIncrementedId(CollectionReference usersRef, String name, String phone, String password, String email, String avatar, String status, int role) {
+        usersRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                QuerySnapshot querySnapshot = task.getResult();
+                List<DocumentSnapshot> documents = querySnapshot.getDocuments();
+
+                if (documents.isEmpty()) {
+                    // Bộ sưu tập "users" chưa có tài liệu nào, tạo tài liệu mới với ID là 1
+                    createNewUser(usersRef.document("1"), name, phone, password, email, avatar, status, role);
+                } else {
+                    // Lấy tài liệu cuối cùng trong danh sách và tăng giá trị ID lên 1
+                    DocumentSnapshot lastDocument = documents.get(documents.size() - 1);
+                    String lastUserId = lastDocument.getId();
+                    long newId = Long.parseLong(lastUserId) + 1;
+
+                    // Tạo tài liệu mới với ID mới
+                    createNewUser(usersRef.document(String.valueOf(newId)), name, phone, password, email, avatar, status, role);
+                }
+            } else {
+                // Lỗi khi truy vấn bộ sưu tập "users"
+                Toast.makeText(getApplicationContext(), "Failed to query users collection", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
 }
